@@ -1,0 +1,206 @@
+/* =========================
+CURRENT YEAR
+========================= */
+
+document.getElementById("year").textContent =
+new Date().getFullYear();
+
+/* =========================
+SCROLL REVEAL
+========================= */
+
+const revealElements = document.querySelectorAll(
+".content-section, .final-section"
+);
+
+const observer = new IntersectionObserver(
+(entries) => {
+
+```
+    entries.forEach((entry) => {
+
+        if (entry.isIntersecting) {
+
+            entry.target.classList.add("visible");
+
+        }
+
+    });
+
+},
+{
+    threshold: 0.08
+}
+```
+
+);
+
+revealElements.forEach((element) => {
+
+```
+element.classList.add("reveal");
+
+observer.observe(element);
+```
+
+});
+
+/* =========================
+NAVIGATION ACTIVE STATE
+========================= */
+
+const sections = document.querySelectorAll("section[id]");
+
+const navLinks = document.querySelectorAll(
+".nav-links a"
+);
+
+window.addEventListener("scroll", () => {
+
+```
+let currentSection = "";
+
+sections.forEach((section) => {
+
+    const sectionTop =
+        section.offsetTop - 180;
+
+    const sectionHeight =
+        section.offsetHeight;
+
+    if (
+        window.scrollY >= sectionTop &&
+        window.scrollY <
+        sectionTop + sectionHeight
+    ) {
+
+        currentSection = section.getAttribute("id");
+
+    }
+
+});
+
+
+navLinks.forEach((link) => {
+
+    link.classList.remove("active");
+
+    if (
+        link.getAttribute("href") ===
+        "#" + currentSection
+    ) {
+
+        link.classList.add("active");
+
+    }
+
+});
+```
+
+});
+
+/* =========================
+HERO PARALLAX EFFECT
+========================= */
+
+const neuralContainer =
+document.querySelector(".neural-container");
+
+if (neuralContainer) {
+
+```
+document.addEventListener(
+    "mousemove",
+    (event) => {
+
+        const x =
+            (window.innerWidth / 2 - event.pageX)
+            / 60;
+
+        const y =
+            (window.innerHeight / 2 - event.pageY)
+            / 60;
+
+        neuralContainer.style.transform =
+            `rotateY(${x}deg)
+             rotateX(${y}deg)`;
+
+    }
+);
+```
+
+}
+
+/* =========================
+FAKE ANALYZE BUTTON
+========================= */
+
+const analyzeButton =
+document.querySelector(".fake-button");
+
+if (analyzeButton) {
+
+```
+analyzeButton.addEventListener(
+    "click",
+    () => {
+
+        analyzeButton.textContent =
+            "ANALYSIS COMPLETE";
+
+        analyzeButton.style.opacity =
+            "0.7";
+
+
+        setTimeout(() => {
+
+            analyzeButton.textContent =
+                "ANALYZE TEXT";
+
+            analyzeButton.style.opacity =
+                "1";
+
+        }, 1500);
+
+    }
+);
+
+/* =========================
+SCROLL REVEAL ANIMATION
+========================= */
+
+.reveal {
+
+```
+opacity: 0;
+
+transform: translateY(40px);
+
+transition:
+    opacity 0.8s ease,
+    transform 0.8s ease;
+```
+
+}
+
+.reveal.visible {
+
+```
+opacity: 1;
+
+transform: translateY(0);
+```
+
+}
+
+.nav-links a.active {
+
+```
+color: var(--accent);
+```
+
+}
+
+```
+
+}
