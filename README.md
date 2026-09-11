@@ -1,567 +1,187 @@
-# 🧠 Named Entity Recognition System
+# 🏷️ Named-Entity-Recognition-System
 
-### BERT-Based Named Entity Recognition for Text and Broadcast Analytics
+**A BERT-based NER engine for extracting people, organizations, locations & miscellaneous entities from text**
 
-An end-to-end **Named Entity Recognition (NER)** system built using **BERT**, designed to automatically identify and classify important entities from unstructured text.
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![Transformers](https://img.shields.io/badge/🤗%20Transformers-4.30+-yellow.svg)](https://huggingface.co/docs/transformers)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-ff4b4b.svg?logo=streamlit&logoColor=white)](https://streamlit.io/)
 
-The system is fine-tuned using the **CoNLL-2003 dataset** and uses the standard **BIO tagging scheme** for token classification. It can identify entities such as people, organizations, locations, and miscellaneous named entities.
-
-The project also includes an interactive **Streamlit dashboard** that allows users to enter text and visualize extracted entities along with prediction confidence scores.
-
----
-
-## 📌 The Problem
-
-Large amounts of textual information are generated every day through news articles, broadcast transcripts, reports, social media, and other digital sources.
-
-Manually identifying important entities such as:
-
-* 👤 People
-* 🏢 Organizations
-* 📍 Locations
-* 🏷️ Other named entities
-
-from large volumes of text is time-consuming and inefficient.
-
-Traditional rule-based approaches often struggle with contextual meaning. For example, the same word may represent different entities depending on the sentence.
-
-This project addresses that challenge using a **Transformer-based BERT model**, which learns contextual relationships between words and performs token-level classification.
+*Fine-tunes a pretrained BERT encoder for token-level Named Entity Recognition, decoded with an optional CRF layer, evaluated with precision / recall / F1.*
 
 ---
+
+## 📌 Overview
+
+This project fine-tunes **`bert-base-uncased`** on the **CoNLL-2003** dataset to identify four entity types in raw text:
+
+| Tag | Meaning |
+|-----|---------|
+| **PER** | Person |
+| **ORG** | Organization |
+| **LOC** | Location |
+| **MISC** | Miscellaneous (events, nationalities, products, etc.) |
+
+Entities are recovered from BIO-tagged token predictions, and a **CRF (Conditional Random Field)** layer sits on top of the linear classifier to enforce valid tag transitions (e.g. an `I-PER` tag can only follow `B-PER`/`I-PER`), which noticeably cleans up the output compared to raw argmax decoding.
 
 ## 🚀 Features
 
-* 🧠 **BERT-Based NER Model**
-  Fine-tunes a pretrained `bert-base-uncased` model for token classification.
+- **🧠 Fine-tuned BERT encoder** — `bert-base-uncased` + dropout + linear classifier, with an optional CRF head for structured decoding.
+- **📈 Discriminative two-phase fine-tuning** — freeze the encoder and warm up the classifier head first, then unfreeze with a lower encoder learning rate (inspired by ULMFiT) to avoid catastrophic forgetting.
+- **🛡️ Built-in overfitting controls** — dropout, label smoothing, weight decay, gradient clipping, and early stopping, all configurable from the CLI.
+- **⚙️ Fully typed configuration** — every hyperparameter, path, and label mapping lives in `config.py` as dataclasses, so nothing is hard-coded elsewhere.
+- **📊 Evaluation with `seqeval`** — entity-level precision, recall, and F1, not just token accuracy.
+- **💻 CLI training & inference** — `train.py` and `predict.py` support single sentences, batch files, and a built-in broadcast-news demo set.
+- **🖥️ Streamlit dashboard** (`app.py`) — paste text, get color-coded entity highlighting, confidence scores, and a results table, right in the browser.
+- **📉 TensorBoard logging** and JSON training-history export for every run.
 
-* 🏷️ **BIO Tagging Scheme**
-  Uses the standard Begin-Inside-Outside encoding for entity recognition.
+## 🏗️ Architecture
 
-* 🔍 **Multiple Entity Classes**
-  Detects:
-
-  * Person (`PER`)
-  * Organization (`ORG`)
-  * Location (`LOC`)
-  * Miscellaneous (`MISC`)
-
-* 🔗 **Optional CRF Layer**
-  Supports a Conditional Random Field layer to improve structured BIO sequence predictions.
-
-* 📊 **Model Evaluation**
-  Evaluates predictions using:
-
-  * Precision
-  * Recall
-  * F1 Score
-
-* ⚙️ **Configurable Training Pipeline**
-  Centralized configuration for model parameters, training settings, datasets, checkpoints, and output directories.
-
-* 🛑 **Early Stopping**
-  Prevents unnecessary training when validation performance stops improving.
-
-* 📈 **TensorBoard Logging**
-  Supports training visualization and experiment monitoring.
-
-* ⚡ **Mixed Precision Training**
-  Supports Automatic Mixed Precision for faster GPU training.
-
-* 🖥️ **Interactive Streamlit Dashboard**
-  Provides a simple interface for entering text and visualizing detected entities.
-
-* 🎯 **Confidence Scores**
-  Displays prediction confidence for each detected entity.
-
----
-
-# 🏗️ System Architecture
-
-```mermaid
+```
 graph TD
+    A["📝 Raw Text"] -->|"BERT Tokenizer"| B("1. Sub-word Tokenization")
+    B -->|"Token IDs"| C("2. BERT Encoder")
+    C -->|"Contextual Embeddings (768-dim)"| D("3. Dropout")
+    D -->|"Regularised Features"| E("4. Linear Classifier")
+    E -->|"Per-token Label Logits"| F{"CRF Enabled?"}
+    F -->|"Yes"| G("5a. CRF Decoding")
+    F -->|"No"| H("5b. Argmax Decoding")
+    G --> I["🏷️ BIO Tags → Entities"]
+    H --> I
 
-    A["📝 Input Text / CoNLL-2003 Dataset"]
-        --> B["🔤 BERT Tokenizer"]
-
-    B --> C["🏷️ BIO Label Alignment"]
-
-    C --> D["🧠 BERT Encoder"]
-
-    D --> E["💧 Dropout Layer"]
-
-    E --> F["📊 Token Classification Layer"]
-
-    F --> G["🔗 Optional CRF Layer"]
-
-    G --> H["🏷️ Entity Predictions"]
-
-    H --> I["📈 Evaluation Metrics"]
-
-    I --> J["🖥️ Streamlit Dashboard"]
+    style A fill:#e2e2e2,stroke:#333,stroke-width:2px,color:#000
+    style B fill:#457B9D,stroke:#333,stroke-width:2px,color:#fff
+    style C fill:#E07A5F,stroke:#333,stroke-width:2px,color:#fff
+    style D fill:#F2CC8F,stroke:#333,stroke-width:2px,color:#000
+    style E fill:#8B7E74,stroke:#333,stroke-width:2px,color:#fff
+    style F fill:#B5838D,stroke:#333,stroke-width:2px,color:#fff
+    style G fill:#81B29A,stroke:#333,stroke-width:2px,color:#000
+    style H fill:#81B29A,stroke:#333,stroke-width:2px,color:#000
+    style I fill:#3D2C2E,stroke:#333,stroke-width:2px,color:#fff
 ```
 
----
+### 📂 Codebase mapping
 
-## 🔄 Model Pipeline
+| File | Purpose |
+|------|---------|
+| [`config.py`](./config.py) | Central typed configuration — model, training, data, and path settings (`NERConfig`) |
+| [`train.py`](./train.py) | Training entry point — standard or two-phase discriminative fine-tuning, with full CLI control over LR, dropout, label smoothing, patience, etc. |
+| [`resume_train.py`](./resume_train.py) | Resume training from a saved checkpoint |
+| [`predict.py`](./predict.py) | Inference entry point — run on a single string, a file of sentences, or a built-in demo set; optional analytics report |
+| [`eval_test.py`](./eval_test.py) | Standalone evaluation script — precision / recall / F1 on the test split via `seqeval` |
+| [`app.py`](./app.py) | Streamlit dashboard for interactive, browser-based entity extraction |
+| `src/data/` | Dataset loading & `DataLoader` construction (`ner_dataset.py`) |
+| `src/model/` | The `BroadcastNERModel` architecture (BERT + classifier + CRF) |
+| `src/training/` | The `NERTrainer` training/evaluation loop |
+| `src/inference/` | `BroadcastNERPredictor` and analytics utilities |
+| [`requirements.txt`](./requirements.txt) | Project dependencies |
 
-The system follows the following workflow:
+## 🛠️ Setup & Installation
 
-```text
-Input Text
-     │
-     ▼
-BERT Tokenizer
-     │
-     ▼
-Tokenized Input + Attention Mask
-     │
-     ▼
-BERT Contextual Encoder
-     │
-     ▼
-Dropout Regularization
-     │
-     ▼
-Linear Classification Layer
-     │
-     ▼
-Optional CRF Decoder
-     │
-     ▼
-BIO Tag Predictions
-     │
-     ▼
-Entity Extraction
-     │
-     ▼
-Interactive Visualization
-```
+**Prerequisites:** Python 3.9+, pip, and (optionally) a CUDA-capable GPU for faster training.
 
----
-
-# 🏷️ Entity Classes
-
-The model uses the standard BIO tagging format.
-
-| Tag      | Description                         |
-| -------- | ----------------------------------- |
-| `O`      | Token is outside an entity          |
-| `B-PER`  | Beginning of a Person entity        |
-| `I-PER`  | Inside a Person entity              |
-| `B-ORG`  | Beginning of an Organization entity |
-| `I-ORG`  | Inside an Organization entity       |
-| `B-LOC`  | Beginning of a Location entity      |
-| `I-LOC`  | Inside a Location entity            |
-| `B-MISC` | Beginning of a Miscellaneous entity |
-| `I-MISC` | Inside a Miscellaneous entity       |
-
----
-
-# 🧠 Model Architecture
-
-The core architecture of the system is:
-
-```text
-Input Tokens
-      │
-      ▼
-BERT Encoder
-      │
-      ▼
-Contextual Token Embeddings
-      │
-      ▼
-Dropout Layer
-      │
-      ▼
-Linear Classification Layer
-      │
-      ▼
-Optional CRF Layer
-      │
-      ▼
-NER Tag Predictions
-```
-
-### Base Model
-
-```text
-bert-base-uncased
-```
-
-The BERT encoder generates contextual embeddings for every token in the input sequence.
-
-These embeddings are then passed through:
-
-1. Dropout layer for regularization
-2. Linear classification layer
-3. Optional CRF decoder for structured sequence prediction
-
----
-
-# 📂 Project Structure
-
-```text
-Named-Entity-Recognition-System/
-│
-├── app.py
-│   └── Streamlit web application for interactive NER inference
-│
-├── config.py
-│   └── Central configuration for model, training, data and paths
-│
-├── train.py
-│   └── Main training pipeline
-│
-├── resume_train.py
-│   └── Resume training from saved checkpoints
-│
-├── predict.py
-│   └── Run inference using the trained NER model
-│
-├── eval_test.py
-│   └── Evaluate the trained model on test data
-│
-├── requirements.txt
-│   └── Project dependencies
-│
-├── checkpoints/
-│   └── Saved trained model checkpoints
-│
-├── runs/
-│   └── TensorBoard training logs
-│
-└── output/
-    └── Generated predictions and results
-```
-
----
-
-# 🛠️ Technologies Used
-
-| Technology                | Purpose                           |
-| ------------------------- | --------------------------------- |
-| Python                    | Core programming language         |
-| PyTorch                   | Deep learning framework           |
-| Hugging Face Transformers | BERT model and NLP utilities      |
-| Hugging Face Datasets     | Dataset loading and preprocessing |
-| BERT                      | Contextual language model         |
-| CRF                       | Structured sequence prediction    |
-| SeqEval                   | Sequence labeling evaluation      |
-| Scikit-learn              | Machine learning utilities        |
-| TensorBoard               | Training visualization            |
-| Streamlit                 | Interactive web interface         |
-
----
-
-# ⚙️ Installation
-
-## 1. Clone the Repository
-
+**1. Clone the repository**
 ```bash
 git clone https://github.com/pritomsarma/Named-Entity-Recognition-System.git
-```
-
-Move into the project directory:
-
-```bash
 cd Named-Entity-Recognition-System
 ```
 
----
-
-## 2. Create a Virtual Environment
-
-### Windows
-
+**2. Create a virtual environment**
 ```bash
-python -m venv venv
-venv\Scripts\activate
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS/Linux
+source .venv/bin/activate
 ```
 
-### Linux / macOS
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
----
-
-## 3. Install Dependencies
-
+**3. Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
----
+## 🏋️ Training
 
-# 🚀 Training the Model
-
-To train the model using the default configuration:
-
+Train with sensible defaults (CoNLL-2003, 4 epochs, quick dataset subset):
 ```bash
 python train.py
 ```
 
-The default training configuration includes settings such as:
-
-* BERT-based encoder
-* CoNLL-2003 dataset
-* BIO tagging
-* Token classification
-* Dropout regularization
-* AdamW optimization
-* Learning rate warmup
-* Early stopping
-* TensorBoard logging
-* Optional CRF decoding
-
-Training parameters can also be adjusted according to the available hardware and experiment requirements.
-
----
-
-# 🔄 Resume Training
-
-If training is interrupted or you want to continue from a saved checkpoint:
-
+Recommended: two-phase discriminative fine-tuning:
 ```bash
-python resume_train.py
+python train.py --fine_tune --freeze_epochs 2 --epochs 6
 ```
 
-This allows the training pipeline to continue using previously saved model checkpoints.
-
----
-
-# 🔮 Running Predictions
-
-After training the model, predictions can be generated using:
-
+Stronger regularisation, to fight overfitting on small subsets:
 ```bash
-python predict.py
+python train.py --label_smoothing 0.15 --dropout 0.4 --patience 4
 ```
 
-The trained model processes the input text and returns detected named entities along with their predicted categories.
-
----
-
-# 📊 Model Evaluation
-
-The system includes evaluation functionality for testing model performance.
-
-Run:
-
+GPU training with mixed precision:
 ```bash
-python eval_test.py
+python train.py --device cuda --amp --fine_tune
 ```
 
-The model is evaluated using standard Named Entity Recognition metrics:
-
-### Precision
-
-Measures how many predicted entities are correct.
-
-```text
-Precision = Correct Predicted Entities / Total Predicted Entities
+Full CoNLL-2003 dataset (all ~14k training examples — several hours on CPU):
+```bash
+python train.py --full_data --epochs 10 --fine_tune
 ```
 
-### Recall
+Training saves the best checkpoint to `checkpoints/best_model.pt`, logs to TensorBoard under `runs/`, and writes a JSON training history to `output/training_history.json`.
 
-Measures how many actual entities were successfully identified.
+## 🔮 Inference
 
-```text
-Recall = Correct Predicted Entities / Total Actual Entities
+Run the built-in broadcast-news demo:
+```bash
+python predict.py --demo
 ```
 
-### F1 Score
-
-Provides a balanced measure of precision and recall.
-
-```text
-F1 Score = 2 × (Precision × Recall) / (Precision + Recall)
+Predict on custom text:
+```bash
+python predict.py --model_path checkpoints/best_model.pt --text "Anderson Cooper reported from New York on CNN."
 ```
 
----
+Predict on a file (one sentence per line), with analytics and JSON export:
+```bash
+python predict.py --model_path checkpoints/best_model.pt --file transcripts.txt --analytics --output results.json
+```
 
-# 🖥️ Running the Web Application
+## 🖥️ Interactive Dashboard
 
-The project includes an interactive Streamlit dashboard.
-
-Run:
-
+Launch the Streamlit UI for point-and-click entity extraction:
 ```bash
 streamlit run app.py
 ```
 
-The application allows users to:
+Paste or type any text and click **Analyze Entities** to see color-coded, confidence-scored entities highlighted inline, plus a summary table.
 
-* Enter or paste text
-* Analyze the text using the trained NER model
-* Highlight detected entities
-* View entity classifications
-* View confidence scores
-* See the total number of detected entities
-* View average prediction confidence
+## 📊 Evaluation
 
----
-
-# ✨ Example
-
-### Input
-
-```text
-U.N. Secretary-General Kofi Annan visited Baghdad today.
-```
-
-### Possible Output
-
-| Entity     | Classification |
-| ---------- | -------------- |
-| U.N.       | Organization   |
-| Kofi Annan | Person         |
-| Baghdad    | Location       |
-
-The Streamlit interface also displays the entities directly inside the original text with visual highlighting.
-
----
-
-# ⚙️ Configuration
-
-All major system configurations are centralized inside:
-
-```text
-config.py
-```
-
-The configuration includes:
-
-### 🧠 Model Configuration
-
-* Pretrained BERT model
-* Number of labels
-* Hidden size
-* Dropout rate
-* Maximum sequence length
-* CRF configuration
-
-### 🚀 Training Configuration
-
-* Learning rates
-* Batch size
-* Number of epochs
-* Weight decay
-* Gradient clipping
-* Learning rate warmup
-* Label smoothing
-* Mixed precision training
-* Early stopping
-
-### 📊 Data Configuration
-
-* Dataset subsets
-* Training split size
-* Validation split size
-* Test split size
-* Maximum sequence length
-
-### 📁 Path Configuration
-
-Automatically manages directories for:
-
-```text
-checkpoints/
-runs/
-output/
-```
-
----
-
-# 📈 Training Visualization
-
-The project supports TensorBoard for monitoring the training process.
-
-Run:
-
+Run standalone evaluation (precision, recall, F1 via `seqeval`) on the held-out test split:
 ```bash
-tensorboard --logdir runs
+python eval_test.py
 ```
 
-Then open the local TensorBoard URL displayed in your terminal.
+## ⚙️ Key Configuration Defaults
 
-Training metrics can be monitored to analyze:
+| Setting | Default |
+|---------|---------|
+| Base model | `bert-base-uncased` |
+| Max sequence length | 128 tokens |
+| Dropout | 0.3 |
+| CRF decoding | Enabled |
+| Encoder LR / Classifier LR | 2e-5 / 5e-4 |
+| Label smoothing | 0.1 |
+| Weight decay | 0.01 |
+| Early-stopping patience | 3 epochs |
+| Batch size | 16 |
 
-* Training loss
-* Validation performance
-* Model convergence
-* Experiment progress
+All of these are overridable via CLI flags on `train.py` or by editing `config.py` directly.
 
----
+## 🤝 Contributing
 
-# 🎯 Use Cases
+Contributions, issues, and feature requests are welcome — feel free to open an issue or a pull request.
 
-This Named Entity Recognition system can be extended for applications such as:
+## 📝 License
 
-* 📰 News and broadcast transcript analysis
-* 📺 Media analytics
-* 🔎 Information extraction
-* 📚 Document processing
-* 🧾 Automated data extraction
-* 🤖 Intelligent search systems
-* 📊 Content analytics
-* 🗂️ Knowledge graph construction
-* 🧠 NLP research and experimentation
-
----
-
-# 🔮 Future Improvements
-
-Possible future developments include:
-
-* [ ] Support for additional entity categories
-* [ ] Fine-tuning on custom broadcast datasets
-* [ ] Real-time transcript processing
-* [ ] REST API integration
-* [ ] Docker containerization
-* [ ] Model deployment on cloud infrastructure
-* [ ] Support for multilingual NER
-* [ ] Improved entity visualization
-* [ ] Export predictions as JSON or CSV
-* [ ] Integration with speech-to-text pipelines
-* [ ] Transformer model comparison experiments
-
----
-
-# 🤝 Contributing
-
-Contributions, suggestions, and improvements are welcome.
-
-If you would like to contribute:
-
-1. Fork the repository
-2. Create a new branch
-3. Make your changes
-4. Commit your changes
-5. Open a Pull Request
-
----
-
-# 👨‍💻 Author
-
-**Pritom Sarma**
-
-Electronics and Communication Engineering Student | AI & Machine Learning Enthusiast | Robotics & Technology
-
-GitHub: [@pritomsarma](https://github.com/pritomsarma)
-
----
-
-# 📜 License
-
-This project currently does not specify a license.
-
-Consider adding an **MIT License** if you would like others to freely use, modify, and distribute the project with attribution.
-
----
-
-### ⭐ If you found this project useful, consider giving it a star!
-
+No license has been specified yet for this repository. Consider adding one (e.g. MIT) if you plan to share or accept contributions.
