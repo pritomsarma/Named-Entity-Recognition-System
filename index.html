@@ -1,0 +1,544 @@
+# 🧠 Named Entity Recognition System — GitHub Project Page
+
+## Recommended Repository Structure
+
+Create a `docs` folder inside your GitHub repository:
+
+```text
+Named-Entity-Recognition-System/
+│
+├── app.py
+├── config.py
+├── train.py
+├── predict.py
+├── eval_test.py
+├── resume_train.py
+├── requirements.txt
+│
+└── docs/
+    ├── index.html
+    ├── style.css
+    ├── script.js
+    └── assets/
+        ├── architecture.png
+        ├── screenshots/
+        └── video-thumbnail.jpg
+```
+
+Then enable GitHub Pages from:
+
+```text
+Settings → Pages → Deploy from Branch → main → /docs
+```
+
+---
+
+# 📌 WEBPAGE CONTENT STRUCTURE
+
+## 1. HERO SECTION
+
+### Title
+
+# Named Entity Recognition System
+
+### Subtitle
+
+**Understanding Text Through Contextual Artificial Intelligence**
+
+### Brief Description
+
+A BERT-based Named Entity Recognition system designed to automatically identify and classify meaningful entities from unstructured text. The system uses Transformer-based contextual learning and BIO sequence tagging to detect important entities such as people, organizations, locations and other named entities.
+
+### Buttons
+
+* 🔗 View Source Code
+* ▶ Watch Project Presentation
+* 🧠 Explore Architecture
+
+---
+
+# 🎥 2. PROJECT PRESENTATION
+
+## Project Demonstration & Explanation
+
+This section should contain your project presentation video.
+
+### Video Placeholder
+
+```text
+┌─────────────────────────────────────────────┐
+│                                             │
+│                                             │
+│          PROJECT PRESENTATION VIDEO         │
+│                                             │
+│        Coming Soon / Embed Video Here       │
+│                                             │
+│                                             │
+└─────────────────────────────────────────────┘
+```
+
+Later, you can replace this section with:
+
+* YouTube Embed
+* Google Drive video
+* GitHub-hosted video
+* Project demonstration recording
+
+The video should explain:
+
+1. The problem the project solves
+2. What Named Entity Recognition is
+3. The dataset used
+4. BIO tagging
+5. BERT architecture
+6. Training process
+7. Prediction logic
+8. Evaluation metrics
+9. Streamlit interface demonstration
+10. Future applications
+
+---
+
+# 💡 3. THE PROBLEM
+
+## Why Named Entity Recognition?
+
+Every day, enormous amounts of unstructured text are generated through:
+
+* News articles
+* Reports
+* Documents
+* Broadcast transcripts
+* Social media
+* Digital archives
+
+Understanding important information inside this text manually is inefficient.
+
+For example:
+
+> "Barack Obama visited New Delhi to attend a meeting with the United Nations."
+
+A human can immediately understand that:
+
+```text
+Barack Obama → PERSON
+New Delhi → LOCATION
+United Nations → ORGANIZATION
+```
+
+However, a computer needs to understand the context of each word.
+
+This project uses a Transformer-based language model to solve that problem.
+
+---
+
+# 🧠 4. PROJECT LOGIC
+
+## How Does The System Work?
+
+```text
+Raw Text
+   │
+   ▼
+BERT Tokenizer
+   │
+   ▼
+Token IDs + Attention Masks
+   │
+   ▼
+Contextual BERT Encoder
+   │
+   ▼
+Contextual Token Embeddings
+   │
+   ▼
+Dropout Regularization
+   │
+   ▼
+Linear Classification Layer
+   │
+   ▼
+Optional CRF Sequence Decoder
+   │
+   ▼
+BIO Entity Predictions
+   │
+   ▼
+Entity Extraction
+   │
+   ▼
+Streamlit Visualization
+```
+
+---
+
+# 🏗️ 5. SYSTEM ARCHITECTURE
+
+The architecture should be displayed visually on the webpage.
+
+```text
+                    ┌──────────────────┐
+                    │   INPUT TEXT     │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │ BERT TOKENIZER   │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                 ┌─────────────────────────┐
+                 │ TOKEN IDS + ATTENTION   │
+                 │         MASK            │
+                 └────────────┬────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │   BERT ENCODER   │
+                    │ Contextual Model │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │     DROPOUT      │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │ LINEAR CLASSIFIER│
+                    └────────┬─────────┘
+                             │
+                             ▼
+                 ┌─────────────────────────┐
+                 │ OPTIONAL CRF DECODER    │
+                 └────────────┬────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │ BIO TAG OUTPUT   │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │ ENTITY EXTRACTION│
+                    └──────────────────┘
+```
+
+---
+
+# 🏷️ 6. BIO TAGGING LOGIC
+
+Named Entity Recognition is performed using the BIO tagging system.
+
+| Tag    | Meaning                    |
+| ------ | -------------------------- |
+| O      | Outside an Entity          |
+| B-PER  | Beginning of Person        |
+| I-PER  | Inside Person              |
+| B-ORG  | Beginning of Organization  |
+| I-ORG  | Inside Organization        |
+| B-LOC  | Beginning of Location      |
+| I-LOC  | Inside Location            |
+| B-MISC | Beginning of Miscellaneous |
+| I-MISC | Inside Miscellaneous       |
+
+### Example
+
+```text
+Sentence:
+
+Barack Obama visited New Delhi.
+
+Barack  → B-PER
+Obama   → I-PER
+visited → O
+New     → B-LOC
+Delhi   → I-LOC
+```
+
+---
+
+# 🔬 7. CORE MATHEMATICAL LOGIC
+
+## Token Classification
+
+For every token, BERT produces a contextual embedding:
+
+```text
+H = BERT(X)
+```
+
+Where:
+
+```text
+X = Input Tokens
+H = Contextual Token Embeddings
+```
+
+Each token embedding is passed through a classification layer:
+
+```text
+Z = WH + b
+```
+
+Where:
+
+```text
+W = Learnable Weight Matrix
+H = BERT Hidden Representation
+b = Bias
+Z = Classification Logits
+```
+
+The probabilities are calculated using Softmax:
+
+```text
+P(yᵢ | xᵢ) = exp(zᵢ) / Σ exp(zⱼ)
+```
+
+The predicted class is:
+
+```text
+ŷ = argmax(P(yᵢ | xᵢ))
+```
+
+---
+
+# 📉 8. TRAINING LOSS
+
+The model learns by minimizing Cross-Entropy Loss.
+
+```text
+L = - Σ yᵢ log(ŷᵢ)
+```
+
+Where:
+
+```text
+yᵢ  = Actual Label
+ŷᵢ  = Predicted Probability
+L   = Total Loss
+```
+
+During training:
+
+```text
+Forward Pass
+      ↓
+Prediction
+      ↓
+Calculate Loss
+      ↓
+Backpropagation
+      ↓
+Update Weights
+      ↓
+Repeat
+```
+
+---
+
+# 📊 9. MODEL EVALUATION
+
+The model is evaluated using standard NER metrics.
+
+## Precision
+
+```text
+Precision = True Positive / (True Positive + False Positive)
+```
+
+Measures how many predicted entities were correct.
+
+---
+
+## Recall
+
+```text
+Recall = True Positive / (True Positive + False Negative)
+```
+
+Measures how many actual entities were successfully detected.
+
+---
+
+## F1 Score
+
+```text
+F1 = 2 × Precision × Recall / (Precision + Recall)
+```
+
+The F1 Score provides a balance between Precision and Recall.
+
+---
+
+# 💻 10. CODEBASE LOGIC
+
+The project is divided into independent modules.
+
+| Module            | Responsibility                   |
+| ----------------- | -------------------------------- |
+| `config.py`       | Central project configuration    |
+| `train.py`        | Model training pipeline          |
+| `resume_train.py` | Resume training from checkpoints |
+| `predict.py`      | Run inference on new text        |
+| `eval_test.py`    | Evaluate model performance       |
+| `app.py`          | Streamlit frontend               |
+
+### Code Flow
+
+```text
+config.py
+    │
+    ├───────────────┐
+    ▼               ▼
+train.py         predict.py
+    │               │
+    ▼               ▼
+Model Checkpoint  Entity Predictions
+    │
+    ▼
+eval_test.py
+    │
+    ▼
+Precision / Recall / F1
+    │
+    ▼
+app.py
+    │
+    ▼
+Interactive NER Dashboard
+```
+
+---
+
+# 🖥️ 11. INTERACTIVE APPLICATION
+
+The project includes a Streamlit-based interface that allows users to interact with the trained NER model.
+
+Users can:
+
+* Enter text
+* Run Named Entity Recognition
+* Identify important entities
+* View entity categories
+* View model predictions
+* Analyze extracted information
+
+### Interface Preview
+
+```text
+┌───────────────────────────────────────────────┐
+│                                               │
+│       NAMED ENTITY RECOGNITION SYSTEM         │
+│                                               │
+│  Enter Text:                                  │
+│                                               │
+│  [ Barack Obama visited New Delhi...        ] │
+│                                               │
+│              [ ANALYZE TEXT ]                 │
+│                                               │
+│  RESULTS                                      │
+│                                               │
+│  Barack Obama     PERSON                      │
+│  New Delhi        LOCATION                    │
+│                                               │
+└───────────────────────────────────────────────┘
+```
+
+---
+
+# 🚀 12. TECHNOLOGY STACK
+
+```text
+Python
+   │
+   ├── PyTorch
+   │
+   ├── Hugging Face Transformers
+   │       │
+   │       └── BERT
+   │
+   ├── Hugging Face Datasets
+   │
+   ├── SeqEval
+   │
+   ├── TensorBoard
+   │
+   └── Streamlit
+```
+
+---
+
+# 🌍 13. APPLICATIONS
+
+The system can be applied to:
+
+* 📰 News Analysis
+* 📺 Broadcast Transcript Analysis
+* 📚 Document Processing
+* 🔎 Intelligent Search
+* 🗂️ Information Extraction
+* 🤖 AI Assistants
+* 📊 Content Analytics
+* 🧠 Knowledge Graph Construction
+
+---
+
+# 🔮 14. FUTURE DEVELOPMENT
+
+Future improvements may include:
+
+* Real-time Named Entity Recognition
+* Multilingual NER
+* Assamese language support
+* Speech-to-Text integration
+* Broadcast transcript analysis
+* REST API deployment
+* Cloud deployment
+* Docker support
+* Larger Transformer models
+* Custom dataset training
+* Knowledge graph generation
+
+---
+
+# 👨‍🏫 MENTORSHIP & GUIDANCE
+
+## Assigned Mentor
+
+### Amaan Irfan Sir
+
+Guidance and mentorship for the development and execution of the project.
+
+---
+
+## Faculty Advisor
+
+### Prof. Prithwijit Guha
+
+Academic guidance and faculty supervision.
+
+---
+
+# 👨‍💻 PROJECT DEVELOPER
+
+## Pritom Sarma
+
+Electronics and Communication Engineering
+
+Artificial Intelligence • Machine Learning • NLP • Robotics
+
+GitHub:
+
+https://github.com/pritomsarma
+
+---
+
+# ⭐ Explore The Project
+
+### Source Code
+
+https://github.com/pritomsarma/Named-Entity-Recognition-System
+
+If you find this project interesting, consider starring the repository.
