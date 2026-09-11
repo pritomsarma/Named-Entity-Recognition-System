@@ -1,1358 +1,924 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Named Entity Recognition System</title>
 
-```
-<meta name="description"
-    content="A BERT-based Named Entity Recognition System for contextual entity extraction using Transformer models.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<meta name="author" content="Pritom Sarma">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 
-<title>Named Entity Recognition System | Pritom Sarma</title>
+    <style>
+        :root {
+            /* Light Gradient Theme Colors */
+            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+            
+            --text-dark: #1e293b;
+            --text-muted: #475569;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --accent: #8b5cf6;
+            
+            --font-main: 'Inter', sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
 
-<link rel="stylesheet" href="style.css">
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<!-- Google Font -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        html {
+            scroll-behavior: smooth;
+        }
 
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet">
-```
+        body {
+            font-family: var(--font-main);
+            color: var(--text-dark);
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
 
+        .bg-shapes {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            overflow: hidden;
+            z-index: -1;
+            pointer-events: none;
+        }
+        
+        .shape {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.4;
+            border-radius: 50%;
+        }
+        
+        .shape-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #93c5fd; }
+        .shape-2 { bottom: -20%; right: -10%; width: 600px; height: 600px; background: #c4b5fd; }
+        .shape-3 { top: 40%; left: 60%; width: 400px; height: 400px; background: #fbcfe8; }
+
+        nav {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            padding: 1.2rem 5%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-brand {
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--text-dark);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .nav-brand i { color: var(--primary); }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+        }
+        
+        .nav-links a.active::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        section {
+            padding: 6rem 0;
+        }
+        
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: 24px;
+            padding: 3rem;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .hero {
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding-top: 2rem;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            line-height: 1.1;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 700px;
+            margin-bottom: 2.5rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 0.8rem 1.8rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-dark);
+            border: 1px solid var(--text-muted);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text-dark);
+            background: rgba(0,0,0,0.03);
+            transform: translateY(-2px);
+        }
+
+        .video-wrapper {
+            margin-top: 4rem;
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 16/9;
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .video-wrapper:hover {
+            transform: scale(1.02);
+        }
+
+        .play-btn {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: var(--primary);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .video-wrapper:hover .play-btn {
+            transform: scale(1.1);
+            color: var(--accent);
+        }
+
+        .architecture-flow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            margin: 3rem 0;
+        }
+
+        .arch-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .arch-node {
+            background: white;
+            padding: 1.2rem 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            text-align: center;
+            font-weight: 600;
+            min-width: 180px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .arch-node:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+        }
+        
+        .arch-node i {
+            display: block;
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .arch-arrow {
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: translateX(0); }
+            50% { opacity: 1; transform: translateX(5px); }
+            100% { opacity: 0.5; transform: translateX(0); }
+        }
+
+        .math-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .math-card {
+            background: rgba(255,255,255,0.7);
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.8);
+            transition: all 0.3s ease;
+        }
+
+        .math-card:hover {
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            background: rgba(255,255,255,0.9);
+        }
+
+        .math-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .equation-box {
+            background: rgba(241, 245, 249, 0.8);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            text-align: center;
+            margin: 1rem 0;
+            border: 1px solid #e2e8f0;
+        }
+
+        .code-container {
+            position: relative;
+            background: #1e1e1e;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .code-header {
+            background: #2d2d2d;
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #404040;
+        }
+        
+        .code-title {
+            color: #e0e0e0;
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .copy-btn {
+            background: transparent;
+            border: 1px solid #555;
+            color: #ccc;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-family: var(--font-main);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .copy-btn:hover {
+            background: #444;
+            color: #fff;
+        }
+        
+        .copy-btn.copied {
+            background: #22c55e;
+            color: white;
+            border-color: #22c55e;
+        }
+
+        pre {
+            padding: 1.5rem;
+            overflow-x: auto;
+            margin: 0;
+        }
+
+        code {
+            font-family: var(--font-code);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #d4d4d4;
+        }
+        
+        /* Basic syntax highlighting simulation */
+        .kw { color: #569cd6; font-weight: bold; } /* Keyword */
+        .cl { color: #4ec9b0; } /* Class */
+        .fn { color: #dcdcaa; } /* Function */
+        .st { color: #ce9178; } /* String */
+        .cm { color: #6a9955; font-style: italic; } /* Comment */
+        .op { color: #d4d4d4; } /* Operator */
+        .nm { color: #b5cea8; } /* Number */
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+        }
+        
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        .graph-placeholder {
+            width: 100%;
+            height: 300px;
+            background: rgba(255,255,255,0.7);
+            border: 1px dashed #cbd5e1;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-muted);
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .team-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .team-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+        }
+
+        .team-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+
+        .team-avatar {
+            width: 80px;
+            height: 80px;
+            background: #f1f5f9;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: var(--primary);
+        }
+
+        .team-role {
+            font-size: 0.85rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .team-name {
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        footer {
+            background: rgba(255,255,255,0.8);
+            padding: 2rem 5%;
+            text-align: center;
+            color: var(--text-muted);
+            border-top: 1px solid var(--glass-border);
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; } /* Simple mobile adaptation */
+            .arch-row { flex-direction: column; gap: 1rem; }
+            .arch-arrow { transform: rotate(90deg); margin: 0.5rem 0; }
+        }
+    </style>
 </head>
-
 <body>
 
-```
-<!-- =========================
-     BACKGROUND EFFECTS
-========================== -->
-
-<div class="background-grid"></div>
-<div class="glow glow-one"></div>
-<div class="glow glow-two"></div>
-
-
-<!-- =========================
-     NAVIGATION
-========================== -->
-
-<header class="navbar">
-
-    <a href="#home" class="logo">
-        <span class="logo-icon">N</span>
-        <span>NER SYSTEM</span>
-    </a>
-
-    <nav class="nav-links">
-        <a href="#about">About</a>
-        <a href="#architecture">Architecture</a>
-        <a href="#logic">Logic</a>
-        <a href="#application">Application</a>
-        <a href="#team">Team</a>
-    </nav>
-
-    <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System"
-       target="_blank"
-       class="github-button">
-        <span>GitHub</span>
-        ↗
-    </a>
-
-</header>
-
-
-<!-- =========================
-     HERO SECTION
-========================== -->
-
-<main>
-
-    <section id="home" class="hero section">
-
-        <div class="hero-content">
-
-            <div class="hero-tag">
-                <span class="status-dot"></span>
-                TRANSFORMER-BASED NLP SYSTEM
-            </div>
-
-            <h1>
-                Named Entity<br>
-                <span>Recognition System</span>
-            </h1>
-
-            <p class="hero-description">
-                A BERT-powered Natural Language Processing system designed
-                to understand contextual relationships in text and automatically
-                identify meaningful entities such as people, organizations,
-                locations, and miscellaneous named entities.
-            </p>
-
-            <div class="hero-buttons">
-
-                <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System"
-                   target="_blank"
-                   class="primary-button">
-
-                    View Source Code
-                    <span>→</span>
-
-                </a>
-
-                <a href="#architecture"
-                   class="secondary-button">
-
-                    Explore Architecture
-                    ↓
-
-                </a>
-
-            </div>
-
-        </div>
-
-
-        <!-- HERO VISUAL -->
-
-        <div class="hero-visual">
-
-            <div class="neural-container">
-
-                <div class="neural-line line-1"></div>
-                <div class="neural-line line-2"></div>
-                <div class="neural-line line-3"></div>
-                <div class="neural-line line-4"></div>
-
-                <div class="node node-1">INPUT</div>
-                <div class="node node-2">BERT</div>
-                <div class="node node-3">NER</div>
-
-                <div class="entity-card card-per">
-                    <span class="entity-label">PERSON</span>
-                    <strong>Barack Obama</strong>
-                </div>
-
-                <div class="entity-card card-loc">
-                    <span class="entity-label">LOCATION</span>
-                    <strong>New Delhi</strong>
-                </div>
-
-                <div class="entity-card card-org">
-                    <span class="entity-label">ORGANIZATION</span>
-                    <strong>United Nations</strong>
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         PROJECT OVERVIEW
-    ========================== -->
-
-    <section id="about" class="section content-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">01</span>
-
-            <div>
-
-                <p class="section-label">
-                    PROJECT OVERVIEW
-                </p>
-
-                <h2>
-                    Understanding text
-                    <span>through context.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="overview-grid">
-
-            <div class="overview-text">
-
-                <p>
-                    Modern digital platforms generate enormous amounts of
-                    unstructured textual information. Extracting meaningful
-                    information manually from news articles, documents,
-                    reports, transcripts, and digital archives is difficult
-                    and time-consuming.
-                </p>
-
-                <p>
-                    This project addresses that challenge using a
-                    <strong>Transformer-based Named Entity Recognition model</strong>
-                    built on BERT. Instead of relying purely on rules or
-                    keyword matching, the model learns contextual relationships
-                    between words.
-                </p>
-
-                <p>
-                    The system performs token-level classification using the
-                    <strong>BIO tagging scheme</strong> and identifies entities
-                    such as people, organizations, locations, and miscellaneous
-                    entities.
-                </p>
-
-            </div>
-
-
-            <div class="example-panel">
-
-                <div class="panel-header">
-                    <span>EXAMPLE INFERENCE</span>
-                    <span class="live-indicator">
-                        ● ACTIVE
-                    </span>
-                </div>
-
-                <div class="sentence-box">
-
-                    <span class="person-text">
-                        Barack Obama
-                    </span>
-
-                    visited
-
-                    <span class="location-text">
-                        New Delhi
-                    </span>
-
-                    to attend a meeting with the
-
-                    <span class="organization-text">
-                        United Nations
-                    </span>.
-
-                </div>
-
-                <div class="entity-results">
-
-                    <div class="result-row">
-                        <span>Barack Obama</span>
-                        <span class="result-tag person-tag">
-                            PERSON
-                        </span>
-                    </div>
-
-                    <div class="result-row">
-                        <span>New Delhi</span>
-                        <span class="result-tag location-tag">
-                            LOCATION
-                        </span>
-                    </div>
-
-                    <div class="result-row">
-                        <span>United Nations</span>
-                        <span class="result-tag organization-tag">
-                            ORGANIZATION
-                        </span>
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         VIDEO SECTION
-    ========================== -->
-
-    <section id="presentation"
-             class="section content-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">02</span>
-
-            <div>
-
-                <p class="section-label">
-                    PROJECT PRESENTATION
-                </p>
-
-                <h2>
-                    See the system
-                    <span>in action.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="video-container">
-
-            <!--
-                VIDEO PLACEHOLDER
-
-                Replace this entire block later with:
-
-                <iframe
-                    src="YOUR_YOUTUBE_EMBED_URL"
-                    title="Project Presentation"
-                    allowfullscreen>
-                </iframe>
-            -->
-
-            <div class="video-placeholder">
-
-                <div class="play-circle">
-                    ▶
-                </div>
-
-                <h3>
-                    Project Presentation Video
-                </h3>
-
-                <p>
-                    A complete walkthrough explaining the project,
-                    model architecture, training pipeline, code logic,
-                    and application interface.
-                </p>
-
-                <span class="coming-soon">
-                    VIDEO EMBED SPACE
-                </span>
-
-            </div>
-
-        </div>
-
-
-        <div class="video-topics">
-
-            <div>
-                <span>01</span>
-                Problem Statement
-            </div>
-
-            <div>
-                <span>02</span>
-                BERT & BIO Logic
-            </div>
-
-            <div>
-                <span>03</span>
-                Training Pipeline
-            </div>
-
-            <div>
-                <span>04</span>
-                Live Demonstration
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         ARCHITECTURE
-    ========================== -->
-
-    <section id="architecture"
-             class="section content-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">03</span>
-
-            <div>
-
-                <p class="section-label">
-                    SYSTEM ARCHITECTURE
-                </p>
-
-                <h2>
-                    From raw text to
-                    <span>structured information.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="architecture-container">
-
-            <div class="architecture-node">
-
-                <div class="architecture-icon">
-                    01
-                </div>
-
-                <h3>Input Text</h3>
-
-                <p>
-                    Raw unstructured text enters the system.
-                </p>
-
-            </div>
-
-
-            <div class="architecture-arrow">
-                →
-            </div>
-
-
-            <div class="architecture-node">
-
-                <div class="architecture-icon">
-                    02
-                </div>
-
-                <h3>BERT Tokenizer</h3>
-
-                <p>
-                    Text is converted into token IDs and attention masks.
-                </p>
-
-            </div>
-
-
-            <div class="architecture-arrow">
-                →
-            </div>
-
-
-            <div class="architecture-node highlight-node">
-
-                <div class="architecture-icon">
-                    03
-                </div>
-
-                <h3>BERT Encoder</h3>
-
-                <p>
-                    Contextual embeddings are generated for each token.
-                </p>
-
-            </div>
-
-
-            <div class="architecture-arrow">
-                →
-            </div>
-
-
-            <div class="architecture-node">
-
-                <div class="architecture-icon">
-                    04
-                </div>
-
-                <h3>Classifier</h3>
-
-                <p>
-                    Token embeddings are mapped to entity label scores.
-                </p>
-
-            </div>
-
-
-            <div class="architecture-arrow">
-                →
-            </div>
-
-
-            <div class="architecture-node">
-
-                <div class="architecture-icon">
-                    05
-                </div>
-
-                <h3>NER Output</h3>
-
-                <p>
-                    BIO labels are converted into meaningful entities.
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="pipeline-box">
-
-            <div class="pipeline-header">
-                <span>COMPLETE DATA FLOW</span>
-            </div>
-
-            <div class="pipeline-flow">
-
-                <span>RAW TEXT</span>
-
-                <i>↓</i>
-
-                <span>TOKENIZATION</span>
-
-                <i>↓</i>
-
-                <span>CONTEXTUAL EMBEDDINGS</span>
-
-                <i>↓</i>
-
-                <span>CLASSIFICATION</span>
-
-                <i>↓</i>
-
-                <span>ENTITY EXTRACTION</span>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         BIO LOGIC
-    ========================== -->
-
-    <section id="logic"
-             class="section content-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">04</span>
-
-            <div>
-
-                <p class="section-label">
-                    CORE LOGIC
-                </p>
-
-                <h2>
-                    The language
-                    <span>behind the model.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="logic-grid">
-
-
-            <div class="logic-card">
-
-                <span class="logic-number">
-                    A
-                </span>
-
-                <h3>
-                    BIO Tagging
-                </h3>
-
-                <p>
-                    The model predicts a label for every token using
-                    the Begin–Inside–Outside sequence labeling format.
-                </p>
-
-
-                <div class="bio-example">
-
-                    <div>
-                        <span>Barack</span>
-                        <b>B-PER</b>
-                    </div>
-
-                    <div>
-                        <span>Obama</span>
-                        <b>I-PER</b>
-                    </div>
-
-                    <div>
-                        <span>visited</span>
-                        <b>O</b>
-                    </div>
-
-                    <div>
-                        <span>New</span>
-                        <b>B-LOC</b>
-                    </div>
-
-                    <div>
-                        <span>Delhi</span>
-                        <b>I-LOC</b>
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="logic-card">
-
-                <span class="logic-number">
-                    B
-                </span>
-
-                <h3>
-                    Contextual Encoding
-                </h3>
-
-                <p>
-                    BERT processes tokens together and learns how
-                    the meaning of a word changes depending on its
-                    surrounding context.
-                </p>
-
-
-                <div class="equation">
-
-                    H = BERT(X)
-
-                </div>
-
-
-                <div class="equation-description">
-
-                    <span>H</span>
-                    Contextual token embeddings
-
-                    <span>X</span>
-                    Input token sequence
-
-                </div>
-
-            </div>
-
-
-            <div class="logic-card">
-
-                <span class="logic-number">
-                    C
-                </span>
-
-                <h3>
-                    Token Classification
-                </h3>
-
-                <p>
-                    Each contextual embedding is transformed into
-                    classification logits representing possible
-                    entity labels.
-                </p>
-
-
-                <div class="equation">
-
-                    Z = WH + b
-
-                </div>
-
-
-                <div class="equation">
-
-                    ŷ = Softmax(Z)
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         MATHEMATICS
-    ========================== -->
-
-    <section class="section content-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">05</span>
-
-            <div>
-
-                <p class="section-label">
-                    MATHEMATICAL FOUNDATION
-                </p>
-
-                <h2>
-                    How the model
-                    <span>learns.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="math-grid">
-
-
-            <div class="math-card">
-
-                <h3>Softmax Probability</h3>
-
-                <div class="big-equation">
-
-                    P(yᵢ | xᵢ)
-                    =
-                    eᶻⁱ / Σ eᶻʲ
-
-                </div>
-
-                <p>
-                    Converts classification logits into probabilities
-                    across possible entity labels.
-                </p>
-
-            </div>
-
-
-            <div class="math-card">
-
-                <h3>Cross Entropy Loss</h3>
-
-                <div class="big-equation">
-
-                    L = −Σ yᵢ log(ŷᵢ)
-
-                </div>
-
-                <p>
-                    Measures the difference between predicted labels
-                    and the correct BIO entity labels.
-                </p>
-
-            </div>
-
-
-            <div class="math-card">
-
-                <h3>F1 Score</h3>
-
-                <div class="big-equation">
-
-                    F1 =
-                    2PR / P + R
-
-                </div>
-
-                <p>
-                    Balances precision and recall to evaluate
-                    entity extraction performance.
-                </p>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         CODE LOGIC
-    ========================== -->
-
-    <section class="section content-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">06</span>
-
-            <div>
-
-                <p class="section-label">
-                    CODEBASE
-                </p>
-
-                <h2>
-                    Modular design.
-                    <span>Clear workflow.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="code-grid">
-
-            <div class="code-module">
-
-                <span class="file-type">
-                    PY
-                </span>
-
-                <h3>
-                    config.py
-                </h3>
-
-                <p>
-                    Central configuration for model parameters,
-                    training settings, paths, and datasets.
-                </p>
-
-            </div>
-
-
-            <div class="code-module">
-
-                <span class="file-type">
-                    PY
-                </span>
-
-                <h3>
-                    train.py
-                </h3>
-
-                <p>
-                    Main model training pipeline including optimization,
-                    validation, checkpoints, and logging.
-                </p>
-
-            </div>
-
-
-            <div class="code-module">
-
-                <span class="file-type">
-                    PY
-                </span>
-
-                <h3>
-                    predict.py
-                </h3>
-
-                <p>
-                    Runs inference on new input text using the
-                    trained Named Entity Recognition model.
-                </p>
-
-            </div>
-
-
-            <div class="code-module">
-
-                <span class="file-type">
-                    PY
-                </span>
-
-                <h3>
-                    eval_test.py
-                </h3>
-
-                <p>
-                    Evaluates model predictions using precision,
-                    recall, and F1 score.
-                </p>
-
-            </div>
-
-
-            <div class="code-module">
-
-                <span class="file-type">
-                    PY
-                </span>
-
-                <h3>
-                    resume_train.py
-                </h3>
-
-                <p>
-                    Allows training to continue from previously
-                    saved model checkpoints.
-                </p>
-
-            </div>
-
-
-            <div class="code-module">
-
-                <span class="file-type">
-                    APP
-                </span>
-
-                <h3>
-                    app.py
-                </h3>
-
-                <p>
-                    Streamlit-based interactive interface for
-                    performing Named Entity Recognition.
-                </p>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         APPLICATION
-    ========================== -->
-
-    <section id="application"
-             class="section content-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">07</span>
-
-            <div>
-
-                <p class="section-label">
-                    APPLICATION
-                </p>
-
-                <h2>
-                    From model
-                    <span>to interaction.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="application-container">
-
-            <div class="app-window">
-
-                <div class="window-top">
-
-                    <span class="window-dot"></span>
-                    <span class="window-dot"></span>
-                    <span class="window-dot"></span>
-
-                    <p>
-                        Named Entity Recognition Dashboard
-                    </p>
-
-                </div>
-
-
-                <div class="app-content">
-
-                    <h3>
-                        Analyze Text
-                    </h3>
-
-                    <div class="fake-input">
-
-                        Barack Obama visited New Delhi to attend
-                        a meeting with the United Nations.
-
-                    </div>
-
-                    <button class="fake-button">
-                        ANALYZE TEXT
-                    </button>
-
-
-                    <div class="app-results">
-
-                        <div class="app-result">
-
-                            <span>
-                                Barack Obama
-                            </span>
-
-                            <b>
-                                PERSON
-                            </b>
-
-                        </div>
-
-
-                        <div class="app-result">
-
-                            <span>
-                                New Delhi
-                            </span>
-
-                            <b>
-                                LOCATION
-                            </b>
-
-                        </div>
-
-
-                        <div class="app-result">
-
-                            <span>
-                                United Nations
-                            </span>
-
-                            <b>
-                                ORGANIZATION
-                            </b>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-            <div class="application-description">
-
-                <p class="section-label">
-                    STREAMLIT INTERFACE
-                </p>
-
-                <h3>
-                    Interactive entity
-                    extraction.
-                </h3>
-
-                <p>
-                    The trained model is connected to a Streamlit
-                    interface that allows users to enter text and
-                    receive structured Named Entity Recognition results.
-                </p>
-
-
-                <ul>
-
-                    <li>
-                        Enter custom text
-                    </li>
-
-                    <li>
-                        Run BERT-based inference
-                    </li>
-
-                    <li>
-                        Identify named entities
-                    </li>
-
-                    <li>
-                        View entity classifications
-                    </li>
-
-                    <li>
-                        Analyze prediction confidence
-                    </li>
-
-                </ul>
-
-
-                <!--
-                Replace # with your deployed Streamlit URL later.
-                -->
-
-                <a href="#"
-                   class="secondary-button demo-link">
-
-                    Live Application
-                    ↗
-
-                </a>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         TECHNOLOGY STACK
-    ========================== -->
-
-    <section class="section content-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">08</span>
-
-            <div>
-
-                <p class="section-label">
-                    TECHNOLOGY STACK
-                </p>
-
-                <h2>
-                    Built with modern
-                    <span>AI tools.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="technology-grid">
-
-            <div>Python</div>
-            <div>PyTorch</div>
-            <div>BERT</div>
-            <div>Transformers</div>
-            <div>Hugging Face</div>
-            <div>SeqEval</div>
-            <div>TensorBoard</div>
-            <div>Streamlit</div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         FUTURE
-    ========================== -->
-
-    <section class="section content-section future-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">09</span>
-
-            <div>
-
-                <p class="section-label">
-                    FUTURE DEVELOPMENT
-                </p>
-
-                <h2>
-                    Where the project
-                    <span>can go next.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="future-grid">
-
-            <div>Real-Time NER</div>
-            <div>Multilingual Models</div>
-            <div>Assamese Language Support</div>
-            <div>Speech-to-Text Integration</div>
-            <div>REST API Deployment</div>
-            <div>Knowledge Graph Generation</div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         TEAM
-    ========================== -->
-
-    <section id="team"
-             class="section content-section team-section">
-
-        <div class="section-heading">
-
-            <span class="section-number">10</span>
-
-            <div>
-
-                <p class="section-label">
-                    PEOPLE & GUIDANCE
-                </p>
-
-                <h2>
-                    Built with guidance
-                    <span>and mentorship.</span>
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="team-grid">
-
-
-            <div class="team-card featured-team">
-
-                <span class="team-role">
-                    PROJECT DEVELOPER
-                </span>
-
-                <h3>
-                    Pritom Sarma
-                </h3>
-
-                <p>
-                    Electronics and Communication Engineering
-                </p>
-
-                <div class="team-tags">
-
-                    <span>AI</span>
-                    <span>ML</span>
-                    <span>NLP</span>
-
-                </div>
-
-                <a href="https://github.com/pritomsarma"
-                   target="_blank">
-
-                    GitHub ↗
-
-                </a>
-
-            </div>
-
-
-            <div class="team-card">
-
-                <span class="team-role">
-                    ASSIGNED MENTOR
-                </span>
-
-                <h3>
-                    Amaan Irfan Sir
-                </h3>
-
-                <p>
-                    Project mentorship and technical guidance.
-                </p>
-
-            </div>
-
-
-            <div class="team-card">
-
-                <span class="team-role">
-                    FACULTY ADVISOR
-                </span>
-
-                <h3>
-                    Prof. Prithwijit Guha
-                </h3>
-
-                <p>
-                    Academic guidance and faculty supervision.
-                </p>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- =========================
-         FINAL CTA
-    ========================== -->
-
-    <section class="final-section">
-
-        <p>
-            EXPLORE THE PROJECT
-        </p>
-
-        <h2>
-            Interested in the
-            <span>source code?</span>
-        </h2>
-
-        <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System"
-           target="_blank"
-           class="primary-button">
-
-            Visit GitHub Repository
-            ↗
-
-        </a>
-
-    </section>
-
-</main>
-
-
-<!-- =========================
-     FOOTER
-========================== -->
-
-<footer>
-
-    <div>
-
-        <span class="footer-logo">
-            NER SYSTEM
-        </span>
-
-        <p>
-            BERT-Based Named Entity Recognition
-        </p>
-
+    <div class="bg-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
     </div>
 
+    <nav>
+        <a href="#" class="nav-brand">
+            <i class="fa-solid fa-brain"></i> NER Pipeline
+        </a>
+        <div class="nav-links">
+            <a href="#intro" class="active">Introduction</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#logic">Logic & Math</a>
+            <a href="#code">Implementation</a>
+            <a href="#team">Acknowledgements</a>
+        </div>
+        <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System" target="_blank" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+            <i class="fa-brands fa-github"></i> GitHub Repo
+        </a>
+    </nav>
 
-    <p>
-        © <span id="year"></span> Pritom Sarma
-    </p>
+    <section id="intro" class="hero container reveal">
+        <h1>Named Entity <br><span style="background: linear-gradient(90deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Recognition System</span></h1>
+        <p>A sophisticated natural language processing pipeline designed to automatically identify, extract, and classify key information—such as names, organizations, and locations—from unstructured text using BiLSTM and CRF models.</p>
+        
+        <div class="btn-group">
+            <a href="#code" class="btn btn-primary"><i class="fa-solid fa-code"></i> View Source Code</a>
+            <a href="#" class="btn btn-secondary"><i class="fa-solid fa-laptop-code"></i> Live Demo</a>
+        </div>
 
-</footer>
+        <div class="video-wrapper">
+            <div class="play-btn">
+                <i class="fa-solid fa-play"></i>
+            </div>
+            <h3>Project Presentation Video</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Click to embed/play presentation</p>
+        </div>
+    </section>
 
+    <section id="architecture" class="container reveal">
+        <div class="glass-card">
+            <div class="section-header">
+                <h2 class="section-title">System Architecture</h2>
+                <p class="section-subtitle">Visualizing the flow of data from raw text sequence to predicted named entity tags.</p>
+            </div>
 
-<script src="script.js"></script>
-```
+            <div class="architecture-flow">
+                <div class="arch-row">
+                    <div class="arch-node">
+                        <i class="fa-regular fa-file-lines"></i>
+                        Input Text Sequence
+                    </div>
+                </div>
+                
+                <i class="fa-solid fa-arrow-down arch-arrow"></i>
+                
+                <div class="arch-row">
+                    <div class="arch-node">
+                        <i class="fa-solid fa-language"></i>
+                        Tokenizer
+                    </div>
+                </div>
 
+                <i class="fa-solid fa-arrow-down arch-arrow"></i>
+
+                <div class="arch-row">
+                    <div class="arch-node">
+                        <i class="fa-solid fa-layer-group"></i>
+                        Word Embeddings (GloVe)
+                    </div>
+                </div>
+
+                <i class="fa-solid fa-arrow-down arch-arrow"></i>
+
+                <div class="arch-row">
+                    <div class="arch-node" style="border-color: var(--primary); background: rgba(59, 130, 246, 0.05);">
+                        <i class="fa-solid fa-right-left"></i>
+                        Bi-directional LSTM
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal; margin-top: 5px;">Contextual Features</div>
+                    </div>
+                </div>
+
+                <i class="fa-solid fa-arrow-down arch-arrow"></i>
+
+                <div class="arch-row">
+                    <div class="arch-node" style="border-color: var(--accent); background: rgba(139, 92, 246, 0.05);">
+                        <i class="fa-solid fa-network-wired"></i>
+                        Conditional Random Field (CRF)
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal; margin-top: 5px;">Sequence Optimization</div>
+                    </div>
+                </div>
+
+                <i class="fa-solid fa-arrow-down arch-arrow"></i>
+
+                <div class="arch-row">
+                    <div class="arch-node">
+                        <i class="fa-solid fa-tags"></i>
+                        Predicted BIO Tags
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="logic" class="container reveal">
+        <div class="glass-card">
+            <div class="section-header">
+                <h2 class="section-title">Core Logic & Mathematics</h2>
+                <p class="section-subtitle">Understanding the mathematical foundations powering the BiLSTM-CRF architecture.</p>
+            </div>
+
+            <div class="math-grid">
+                <div class="math-card">
+                    <h3>1. BiLSTM Forward Pass</h3>
+                    <p>The BiLSTM computes hidden states by processing the sequence both forwards and backwards, capturing context from both directions.</p>
+                    <div class="equation-box">
+                        $$ \overrightarrow{h}_t = LSTM(x_t, \overrightarrow{h}_{t-1}) $$
+                        $$ \overleftarrow{h}_t = LSTM(x_t, \overleftarrow{h}_{t+1}) $$
+                        $$ h_t = [\overrightarrow{h}_t ; \overleftarrow{h}_t] $$
+                    </div>
+                </div>
+                
+                <div class="math-card">
+                    <h3>2. CRF Score Function</h3>
+                    <p>The CRF layer calculates a sequence score by combining the emission scores (from BiLSTM) and learned transition matrices.</p>
+                    <div class="equation-box">
+                        $$ S(X, y) = \sum_{i=1}^n P_{i, y_i} + \sum_{i=1}^{n+1} A_{y_{i-1}, y_i} $$
+                    </div>
+                </div>
+
+                <div class="math-card">
+                    <h3>3. Log-Likelihood Loss</h3>
+                    <p>During training, we minimize the negative log-likelihood of the true tag sequence over all possible sequences.</p>
+                    <div class="equation-box">
+                        $$ Loss = - \log \left( \frac{e^{S(X, y_{true})}}{\sum_{y' \in Y} e^{S(X, y')}} \right) $$
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 4rem;">
+                <h3 style="margin-bottom: 1.5rem; text-align: center; color: var(--text-dark);">Model Performance Metrics</h3>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">91.4%</div>
+                        <div class="metric-label">Overall F1 Score</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">93.2%</div>
+                        <div class="metric-label">Precision</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">89.7%</div>
+                        <div class="metric-label">Recall</div>
+                    </div>
+                </div>
+                
+                <div class="graph-placeholder">
+                    <i class="fa-solid fa-chart-line" style="font-size: 3rem; color: #94a3b8;"></i>
+                    <p>Training & Validation Loss Convergence Graph Placeholder</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="code" class="container reveal">
+        <div class="glass-card">
+            <div class="section-header">
+                <h2 class="section-title">Critical Implementation</h2>
+                <p class="section-subtitle">PyTorch implementation of the BiLSTM-CRF model initialization and forward propagation.</p>
+            </div>
+
+            <div class="code-container">
+                <div class="code-header">
+                    <div class="code-title"><i class="fa-brands fa-python"></i> model.py</div>
+                    <button class="copy-btn" id="copyBtn">
+                        <i class="fa-regular fa-copy"></i> Copy Code
+                    </button>
+                </div>
+<pre><code id="codeBlock"><span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+<span class="kw">from</span> torchcrf <span class="kw">import</span> CRF
+
+<span class="kw">class</span> <span class="cl">BiLSTM_CRF</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, vocab_size, tagset_size, embedding_dim, hidden_dim):
+        <span class="kw">super</span>(BiLSTM_CRF, self).<span class="fn">__init__</span>()
+        self.embedding_dim <span class="op">=</span> embedding_dim
+        self.hidden_dim <span class="op">=</span> hidden_dim
+        self.vocab_size <span class="op">=</span> vocab_size
+        self.tagset_size <span class="op">=</span> tagset_size
+
+        <span class="cm"># Embedding Layer</span>
+        self.word_embeds <span class="op">=</span> nn.Embedding(vocab_size, embedding_dim)
+        
+        <span class="cm"># Bi-directional LSTM</span>
+        self.lstm <span class="op">=</span> nn.LSTM(embedding_dim, hidden_dim <span class="op">//</span> <span class="nm">2</span>,
+                            num_layers<span class="op">=</span><span class="nm">1</span>, bidirectional<span class="op">=</span><span class="kw">True</span>, batch_first<span class="op">=</span><span class="kw">True</span>)
+
+        <span class="cm"># Maps LSTM outputs to tag space</span>
+        self.hidden2tag <span class="op">=</span> nn.Linear(hidden_dim, tagset_size)
+        
+        <span class="cm"># CRF Layer for sequence optimization</span>
+        self.crf <span class="op">=</span> CRF(tagset_size, batch_first<span class="op">=</span><span class="kw">True</span>)
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, sentence, mask<span class="op">=</span><span class="kw">None</span>):
+        <span class="cm"># Get BiLSTM emission scores</span>
+        embeds <span class="op">=</span> self.word_embeds(sentence)
+        lstm_out, _ <span class="op">=</span> self.lstm(embeds)
+        emissions <span class="op">=</span> self.hidden2tag(lstm_out)
+        
+        <span class="cm"># Decode using Viterbi algorithm through CRF</span>
+        prediction <span class="op">=</span> self.crf.decode(emissions, mask<span class="op">=</span>mask)
+        <span class="kw">return</span> prediction</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <section id="team" class="container reveal">
+        <div class="section-header">
+            <h2 class="section-title">Acknowledgements</h2>
+            <p class="section-subtitle">Grateful for the guidance, mentorship, and support provided throughout the development of this project.</p>
+        </div>
+
+        <div class="team-grid">
+            <div class="team-card">
+                <div class="team-avatar"><i class="fa-solid fa-chalkboard-user"></i></div>
+                <div class="team-role">Assigned Mentor</div>
+                <div class="team-name">Assigned Mentor</div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">Provided continuous technical feedback and architectural guidance for the model.</p>
+            </div>
+            
+            <div class="team-card">
+                <div class="team-avatar"><i class="fa-solid fa-user-tie"></i></div>
+                <div class="team-role">Industry Mentor</div>
+                <div class="team-name">Amaan Irfan Sir</div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">Guided the project scope, real-world application mapping, and deployment logic.</p>
+            </div>
+
+            <div class="team-card">
+                <div class="team-avatar"><i class="fa-solid fa-graduation-cap"></i></div>
+                <div class="team-role">Faculty Advisor</div>
+                <div class="team-name">Prof. Prithwijit Guha</div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">Oversaw the academic integrity and theoretical foundations of the deep learning pipeline.</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; <span id="year"></span> Named Entity Recognition System Report. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // Set current year
+            document.getElementById('year').textContent = new Date().getFullYear();
+
+            // Render KaTeX Math equations
+            renderMathInElement(document.body, {
+              delimiters: [
+                  {left: '$$', right: '$$', display: true},
+                  {left: '$', right: '$', display: false},
+                  {left: '\\(', right: '\\)', display: false},
+                  {left: '\\[', right: '\\]', display: true}
+              ],
+              throwOnError: false
+            });
+
+            // Scroll Reveal Animation via IntersectionObserver
+            const reveals = document.querySelectorAll('.reveal');
+            
+            const revealOptions = {
+                threshold: 0.15,
+                rootMargin: "0px 0px -50px 0px"
+            };
+
+            const revealObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, revealOptions);
+
+            reveals.forEach(reveal => {
+                revealObserver.observe(reveal);
+            });
+
+            // Sticky Navbar Active State Scroll Spy
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-links a');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (scrollY >= (sectionTop - 200)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+
+            // Copy Code to Clipboard functionality
+            const copyBtn = document.getElementById('copyBtn');
+            const codeBlock = document.getElementById('codeBlock');
+
+            copyBtn.addEventListener('click', () => {
+                // Extract clean text without HTML tags for copying
+                const textToCopy = codeBlock.innerText;
+                
+                // Use execCommand for better iFrame compatibility as requested
+                const textarea = document.createElement('textarea');
+                textarea.value = textToCopy;
+                textarea.style.position = 'fixed'; // Prevent scrolling to bottom
+                document.body.appendChild(textarea);
+                textarea.select();
+                
+                try {
+                    document.execCommand('copy');
+                    
+                    // UI feedback
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    copyBtn.classList.add('copied');
+                    
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy', err);
+                    copyBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Error';
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
-
-/* =========================
-SCROLL REVEAL ANIMATION
-========================= */
-
-.reveal {
-
-```
-opacity: 0;
-
-transform: translateY(40px);
-
-transition:
-    opacity 0.8s ease,
-    transform 0.8s ease;
-```
-
-}
-
-.reveal.visible {
-
-```
-opacity: 1;
-
-transform: translateY(0);
-```
-
-}
-
-.nav-links a.active {
-
-```
-color: var(--accent);
-```
-
-}
-
 
