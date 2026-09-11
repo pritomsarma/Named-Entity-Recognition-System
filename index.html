@@ -1,544 +1,1358 @@
-# 🧠 Named Entity Recognition System — GitHub Project Page
+<!DOCTYPE html>
 
-## Recommended Repository Structure
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-Create a `docs` folder inside your GitHub repository:
+```
+<meta name="description"
+    content="A BERT-based Named Entity Recognition System for contextual entity extraction using Transformer models.">
 
-```text
-Named-Entity-Recognition-System/
-│
-├── app.py
-├── config.py
-├── train.py
-├── predict.py
-├── eval_test.py
-├── resume_train.py
-├── requirements.txt
-│
-└── docs/
-    ├── index.html
-    ├── style.css
-    ├── script.js
-    └── assets/
-        ├── architecture.png
-        ├── screenshots/
-        └── video-thumbnail.jpg
+<meta name="author" content="Pritom Sarma">
+
+<title>Named Entity Recognition System | Pritom Sarma</title>
+
+<link rel="stylesheet" href="style.css">
+
+<!-- Google Font -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
 ```
 
-Then enable GitHub Pages from:
+</head>
 
-```text
-Settings → Pages → Deploy from Branch → main → /docs
+<body>
+
+```
+<!-- =========================
+     BACKGROUND EFFECTS
+========================== -->
+
+<div class="background-grid"></div>
+<div class="glow glow-one"></div>
+<div class="glow glow-two"></div>
+
+
+<!-- =========================
+     NAVIGATION
+========================== -->
+
+<header class="navbar">
+
+    <a href="#home" class="logo">
+        <span class="logo-icon">N</span>
+        <span>NER SYSTEM</span>
+    </a>
+
+    <nav class="nav-links">
+        <a href="#about">About</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#logic">Logic</a>
+        <a href="#application">Application</a>
+        <a href="#team">Team</a>
+    </nav>
+
+    <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System"
+       target="_blank"
+       class="github-button">
+        <span>GitHub</span>
+        ↗
+    </a>
+
+</header>
+
+
+<!-- =========================
+     HERO SECTION
+========================== -->
+
+<main>
+
+    <section id="home" class="hero section">
+
+        <div class="hero-content">
+
+            <div class="hero-tag">
+                <span class="status-dot"></span>
+                TRANSFORMER-BASED NLP SYSTEM
+            </div>
+
+            <h1>
+                Named Entity<br>
+                <span>Recognition System</span>
+            </h1>
+
+            <p class="hero-description">
+                A BERT-powered Natural Language Processing system designed
+                to understand contextual relationships in text and automatically
+                identify meaningful entities such as people, organizations,
+                locations, and miscellaneous named entities.
+            </p>
+
+            <div class="hero-buttons">
+
+                <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System"
+                   target="_blank"
+                   class="primary-button">
+
+                    View Source Code
+                    <span>→</span>
+
+                </a>
+
+                <a href="#architecture"
+                   class="secondary-button">
+
+                    Explore Architecture
+                    ↓
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- HERO VISUAL -->
+
+        <div class="hero-visual">
+
+            <div class="neural-container">
+
+                <div class="neural-line line-1"></div>
+                <div class="neural-line line-2"></div>
+                <div class="neural-line line-3"></div>
+                <div class="neural-line line-4"></div>
+
+                <div class="node node-1">INPUT</div>
+                <div class="node node-2">BERT</div>
+                <div class="node node-3">NER</div>
+
+                <div class="entity-card card-per">
+                    <span class="entity-label">PERSON</span>
+                    <strong>Barack Obama</strong>
+                </div>
+
+                <div class="entity-card card-loc">
+                    <span class="entity-label">LOCATION</span>
+                    <strong>New Delhi</strong>
+                </div>
+
+                <div class="entity-card card-org">
+                    <span class="entity-label">ORGANIZATION</span>
+                    <strong>United Nations</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         PROJECT OVERVIEW
+    ========================== -->
+
+    <section id="about" class="section content-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">01</span>
+
+            <div>
+
+                <p class="section-label">
+                    PROJECT OVERVIEW
+                </p>
+
+                <h2>
+                    Understanding text
+                    <span>through context.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="overview-grid">
+
+            <div class="overview-text">
+
+                <p>
+                    Modern digital platforms generate enormous amounts of
+                    unstructured textual information. Extracting meaningful
+                    information manually from news articles, documents,
+                    reports, transcripts, and digital archives is difficult
+                    and time-consuming.
+                </p>
+
+                <p>
+                    This project addresses that challenge using a
+                    <strong>Transformer-based Named Entity Recognition model</strong>
+                    built on BERT. Instead of relying purely on rules or
+                    keyword matching, the model learns contextual relationships
+                    between words.
+                </p>
+
+                <p>
+                    The system performs token-level classification using the
+                    <strong>BIO tagging scheme</strong> and identifies entities
+                    such as people, organizations, locations, and miscellaneous
+                    entities.
+                </p>
+
+            </div>
+
+
+            <div class="example-panel">
+
+                <div class="panel-header">
+                    <span>EXAMPLE INFERENCE</span>
+                    <span class="live-indicator">
+                        ● ACTIVE
+                    </span>
+                </div>
+
+                <div class="sentence-box">
+
+                    <span class="person-text">
+                        Barack Obama
+                    </span>
+
+                    visited
+
+                    <span class="location-text">
+                        New Delhi
+                    </span>
+
+                    to attend a meeting with the
+
+                    <span class="organization-text">
+                        United Nations
+                    </span>.
+
+                </div>
+
+                <div class="entity-results">
+
+                    <div class="result-row">
+                        <span>Barack Obama</span>
+                        <span class="result-tag person-tag">
+                            PERSON
+                        </span>
+                    </div>
+
+                    <div class="result-row">
+                        <span>New Delhi</span>
+                        <span class="result-tag location-tag">
+                            LOCATION
+                        </span>
+                    </div>
+
+                    <div class="result-row">
+                        <span>United Nations</span>
+                        <span class="result-tag organization-tag">
+                            ORGANIZATION
+                        </span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         VIDEO SECTION
+    ========================== -->
+
+    <section id="presentation"
+             class="section content-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">02</span>
+
+            <div>
+
+                <p class="section-label">
+                    PROJECT PRESENTATION
+                </p>
+
+                <h2>
+                    See the system
+                    <span>in action.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="video-container">
+
+            <!--
+                VIDEO PLACEHOLDER
+
+                Replace this entire block later with:
+
+                <iframe
+                    src="YOUR_YOUTUBE_EMBED_URL"
+                    title="Project Presentation"
+                    allowfullscreen>
+                </iframe>
+            -->
+
+            <div class="video-placeholder">
+
+                <div class="play-circle">
+                    ▶
+                </div>
+
+                <h3>
+                    Project Presentation Video
+                </h3>
+
+                <p>
+                    A complete walkthrough explaining the project,
+                    model architecture, training pipeline, code logic,
+                    and application interface.
+                </p>
+
+                <span class="coming-soon">
+                    VIDEO EMBED SPACE
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <div class="video-topics">
+
+            <div>
+                <span>01</span>
+                Problem Statement
+            </div>
+
+            <div>
+                <span>02</span>
+                BERT & BIO Logic
+            </div>
+
+            <div>
+                <span>03</span>
+                Training Pipeline
+            </div>
+
+            <div>
+                <span>04</span>
+                Live Demonstration
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         ARCHITECTURE
+    ========================== -->
+
+    <section id="architecture"
+             class="section content-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">03</span>
+
+            <div>
+
+                <p class="section-label">
+                    SYSTEM ARCHITECTURE
+                </p>
+
+                <h2>
+                    From raw text to
+                    <span>structured information.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="architecture-container">
+
+            <div class="architecture-node">
+
+                <div class="architecture-icon">
+                    01
+                </div>
+
+                <h3>Input Text</h3>
+
+                <p>
+                    Raw unstructured text enters the system.
+                </p>
+
+            </div>
+
+
+            <div class="architecture-arrow">
+                →
+            </div>
+
+
+            <div class="architecture-node">
+
+                <div class="architecture-icon">
+                    02
+                </div>
+
+                <h3>BERT Tokenizer</h3>
+
+                <p>
+                    Text is converted into token IDs and attention masks.
+                </p>
+
+            </div>
+
+
+            <div class="architecture-arrow">
+                →
+            </div>
+
+
+            <div class="architecture-node highlight-node">
+
+                <div class="architecture-icon">
+                    03
+                </div>
+
+                <h3>BERT Encoder</h3>
+
+                <p>
+                    Contextual embeddings are generated for each token.
+                </p>
+
+            </div>
+
+
+            <div class="architecture-arrow">
+                →
+            </div>
+
+
+            <div class="architecture-node">
+
+                <div class="architecture-icon">
+                    04
+                </div>
+
+                <h3>Classifier</h3>
+
+                <p>
+                    Token embeddings are mapped to entity label scores.
+                </p>
+
+            </div>
+
+
+            <div class="architecture-arrow">
+                →
+            </div>
+
+
+            <div class="architecture-node">
+
+                <div class="architecture-icon">
+                    05
+                </div>
+
+                <h3>NER Output</h3>
+
+                <p>
+                    BIO labels are converted into meaningful entities.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="pipeline-box">
+
+            <div class="pipeline-header">
+                <span>COMPLETE DATA FLOW</span>
+            </div>
+
+            <div class="pipeline-flow">
+
+                <span>RAW TEXT</span>
+
+                <i>↓</i>
+
+                <span>TOKENIZATION</span>
+
+                <i>↓</i>
+
+                <span>CONTEXTUAL EMBEDDINGS</span>
+
+                <i>↓</i>
+
+                <span>CLASSIFICATION</span>
+
+                <i>↓</i>
+
+                <span>ENTITY EXTRACTION</span>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         BIO LOGIC
+    ========================== -->
+
+    <section id="logic"
+             class="section content-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">04</span>
+
+            <div>
+
+                <p class="section-label">
+                    CORE LOGIC
+                </p>
+
+                <h2>
+                    The language
+                    <span>behind the model.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="logic-grid">
+
+
+            <div class="logic-card">
+
+                <span class="logic-number">
+                    A
+                </span>
+
+                <h3>
+                    BIO Tagging
+                </h3>
+
+                <p>
+                    The model predicts a label for every token using
+                    the Begin–Inside–Outside sequence labeling format.
+                </p>
+
+
+                <div class="bio-example">
+
+                    <div>
+                        <span>Barack</span>
+                        <b>B-PER</b>
+                    </div>
+
+                    <div>
+                        <span>Obama</span>
+                        <b>I-PER</b>
+                    </div>
+
+                    <div>
+                        <span>visited</span>
+                        <b>O</b>
+                    </div>
+
+                    <div>
+                        <span>New</span>
+                        <b>B-LOC</b>
+                    </div>
+
+                    <div>
+                        <span>Delhi</span>
+                        <b>I-LOC</b>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="logic-card">
+
+                <span class="logic-number">
+                    B
+                </span>
+
+                <h3>
+                    Contextual Encoding
+                </h3>
+
+                <p>
+                    BERT processes tokens together and learns how
+                    the meaning of a word changes depending on its
+                    surrounding context.
+                </p>
+
+
+                <div class="equation">
+
+                    H = BERT(X)
+
+                </div>
+
+
+                <div class="equation-description">
+
+                    <span>H</span>
+                    Contextual token embeddings
+
+                    <span>X</span>
+                    Input token sequence
+
+                </div>
+
+            </div>
+
+
+            <div class="logic-card">
+
+                <span class="logic-number">
+                    C
+                </span>
+
+                <h3>
+                    Token Classification
+                </h3>
+
+                <p>
+                    Each contextual embedding is transformed into
+                    classification logits representing possible
+                    entity labels.
+                </p>
+
+
+                <div class="equation">
+
+                    Z = WH + b
+
+                </div>
+
+
+                <div class="equation">
+
+                    ŷ = Softmax(Z)
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         MATHEMATICS
+    ========================== -->
+
+    <section class="section content-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">05</span>
+
+            <div>
+
+                <p class="section-label">
+                    MATHEMATICAL FOUNDATION
+                </p>
+
+                <h2>
+                    How the model
+                    <span>learns.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="math-grid">
+
+
+            <div class="math-card">
+
+                <h3>Softmax Probability</h3>
+
+                <div class="big-equation">
+
+                    P(yᵢ | xᵢ)
+                    =
+                    eᶻⁱ / Σ eᶻʲ
+
+                </div>
+
+                <p>
+                    Converts classification logits into probabilities
+                    across possible entity labels.
+                </p>
+
+            </div>
+
+
+            <div class="math-card">
+
+                <h3>Cross Entropy Loss</h3>
+
+                <div class="big-equation">
+
+                    L = −Σ yᵢ log(ŷᵢ)
+
+                </div>
+
+                <p>
+                    Measures the difference between predicted labels
+                    and the correct BIO entity labels.
+                </p>
+
+            </div>
+
+
+            <div class="math-card">
+
+                <h3>F1 Score</h3>
+
+                <div class="big-equation">
+
+                    F1 =
+                    2PR / P + R
+
+                </div>
+
+                <p>
+                    Balances precision and recall to evaluate
+                    entity extraction performance.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         CODE LOGIC
+    ========================== -->
+
+    <section class="section content-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">06</span>
+
+            <div>
+
+                <p class="section-label">
+                    CODEBASE
+                </p>
+
+                <h2>
+                    Modular design.
+                    <span>Clear workflow.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="code-grid">
+
+            <div class="code-module">
+
+                <span class="file-type">
+                    PY
+                </span>
+
+                <h3>
+                    config.py
+                </h3>
+
+                <p>
+                    Central configuration for model parameters,
+                    training settings, paths, and datasets.
+                </p>
+
+            </div>
+
+
+            <div class="code-module">
+
+                <span class="file-type">
+                    PY
+                </span>
+
+                <h3>
+                    train.py
+                </h3>
+
+                <p>
+                    Main model training pipeline including optimization,
+                    validation, checkpoints, and logging.
+                </p>
+
+            </div>
+
+
+            <div class="code-module">
+
+                <span class="file-type">
+                    PY
+                </span>
+
+                <h3>
+                    predict.py
+                </h3>
+
+                <p>
+                    Runs inference on new input text using the
+                    trained Named Entity Recognition model.
+                </p>
+
+            </div>
+
+
+            <div class="code-module">
+
+                <span class="file-type">
+                    PY
+                </span>
+
+                <h3>
+                    eval_test.py
+                </h3>
+
+                <p>
+                    Evaluates model predictions using precision,
+                    recall, and F1 score.
+                </p>
+
+            </div>
+
+
+            <div class="code-module">
+
+                <span class="file-type">
+                    PY
+                </span>
+
+                <h3>
+                    resume_train.py
+                </h3>
+
+                <p>
+                    Allows training to continue from previously
+                    saved model checkpoints.
+                </p>
+
+            </div>
+
+
+            <div class="code-module">
+
+                <span class="file-type">
+                    APP
+                </span>
+
+                <h3>
+                    app.py
+                </h3>
+
+                <p>
+                    Streamlit-based interactive interface for
+                    performing Named Entity Recognition.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         APPLICATION
+    ========================== -->
+
+    <section id="application"
+             class="section content-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">07</span>
+
+            <div>
+
+                <p class="section-label">
+                    APPLICATION
+                </p>
+
+                <h2>
+                    From model
+                    <span>to interaction.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="application-container">
+
+            <div class="app-window">
+
+                <div class="window-top">
+
+                    <span class="window-dot"></span>
+                    <span class="window-dot"></span>
+                    <span class="window-dot"></span>
+
+                    <p>
+                        Named Entity Recognition Dashboard
+                    </p>
+
+                </div>
+
+
+                <div class="app-content">
+
+                    <h3>
+                        Analyze Text
+                    </h3>
+
+                    <div class="fake-input">
+
+                        Barack Obama visited New Delhi to attend
+                        a meeting with the United Nations.
+
+                    </div>
+
+                    <button class="fake-button">
+                        ANALYZE TEXT
+                    </button>
+
+
+                    <div class="app-results">
+
+                        <div class="app-result">
+
+                            <span>
+                                Barack Obama
+                            </span>
+
+                            <b>
+                                PERSON
+                            </b>
+
+                        </div>
+
+
+                        <div class="app-result">
+
+                            <span>
+                                New Delhi
+                            </span>
+
+                            <b>
+                                LOCATION
+                            </b>
+
+                        </div>
+
+
+                        <div class="app-result">
+
+                            <span>
+                                United Nations
+                            </span>
+
+                            <b>
+                                ORGANIZATION
+                            </b>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="application-description">
+
+                <p class="section-label">
+                    STREAMLIT INTERFACE
+                </p>
+
+                <h3>
+                    Interactive entity
+                    extraction.
+                </h3>
+
+                <p>
+                    The trained model is connected to a Streamlit
+                    interface that allows users to enter text and
+                    receive structured Named Entity Recognition results.
+                </p>
+
+
+                <ul>
+
+                    <li>
+                        Enter custom text
+                    </li>
+
+                    <li>
+                        Run BERT-based inference
+                    </li>
+
+                    <li>
+                        Identify named entities
+                    </li>
+
+                    <li>
+                        View entity classifications
+                    </li>
+
+                    <li>
+                        Analyze prediction confidence
+                    </li>
+
+                </ul>
+
+
+                <!--
+                Replace # with your deployed Streamlit URL later.
+                -->
+
+                <a href="#"
+                   class="secondary-button demo-link">
+
+                    Live Application
+                    ↗
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         TECHNOLOGY STACK
+    ========================== -->
+
+    <section class="section content-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">08</span>
+
+            <div>
+
+                <p class="section-label">
+                    TECHNOLOGY STACK
+                </p>
+
+                <h2>
+                    Built with modern
+                    <span>AI tools.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="technology-grid">
+
+            <div>Python</div>
+            <div>PyTorch</div>
+            <div>BERT</div>
+            <div>Transformers</div>
+            <div>Hugging Face</div>
+            <div>SeqEval</div>
+            <div>TensorBoard</div>
+            <div>Streamlit</div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         FUTURE
+    ========================== -->
+
+    <section class="section content-section future-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">09</span>
+
+            <div>
+
+                <p class="section-label">
+                    FUTURE DEVELOPMENT
+                </p>
+
+                <h2>
+                    Where the project
+                    <span>can go next.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="future-grid">
+
+            <div>Real-Time NER</div>
+            <div>Multilingual Models</div>
+            <div>Assamese Language Support</div>
+            <div>Speech-to-Text Integration</div>
+            <div>REST API Deployment</div>
+            <div>Knowledge Graph Generation</div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         TEAM
+    ========================== -->
+
+    <section id="team"
+             class="section content-section team-section">
+
+        <div class="section-heading">
+
+            <span class="section-number">10</span>
+
+            <div>
+
+                <p class="section-label">
+                    PEOPLE & GUIDANCE
+                </p>
+
+                <h2>
+                    Built with guidance
+                    <span>and mentorship.</span>
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="team-grid">
+
+
+            <div class="team-card featured-team">
+
+                <span class="team-role">
+                    PROJECT DEVELOPER
+                </span>
+
+                <h3>
+                    Pritom Sarma
+                </h3>
+
+                <p>
+                    Electronics and Communication Engineering
+                </p>
+
+                <div class="team-tags">
+
+                    <span>AI</span>
+                    <span>ML</span>
+                    <span>NLP</span>
+
+                </div>
+
+                <a href="https://github.com/pritomsarma"
+                   target="_blank">
+
+                    GitHub ↗
+
+                </a>
+
+            </div>
+
+
+            <div class="team-card">
+
+                <span class="team-role">
+                    ASSIGNED MENTOR
+                </span>
+
+                <h3>
+                    Amaan Irfan Sir
+                </h3>
+
+                <p>
+                    Project mentorship and technical guidance.
+                </p>
+
+            </div>
+
+
+            <div class="team-card">
+
+                <span class="team-role">
+                    FACULTY ADVISOR
+                </span>
+
+                <h3>
+                    Prof. Prithwijit Guha
+                </h3>
+
+                <p>
+                    Academic guidance and faculty supervision.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =========================
+         FINAL CTA
+    ========================== -->
+
+    <section class="final-section">
+
+        <p>
+            EXPLORE THE PROJECT
+        </p>
+
+        <h2>
+            Interested in the
+            <span>source code?</span>
+        </h2>
+
+        <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System"
+           target="_blank"
+           class="primary-button">
+
+            Visit GitHub Repository
+            ↗
+
+        </a>
+
+    </section>
+
+</main>
+
+
+<!-- =========================
+     FOOTER
+========================== -->
+
+<footer>
+
+    <div>
+
+        <span class="footer-logo">
+            NER SYSTEM
+        </span>
+
+        <p>
+            BERT-Based Named Entity Recognition
+        </p>
+
+    </div>
+
+
+    <p>
+        © <span id="year"></span> Pritom Sarma
+    </p>
+
+</footer>
+
+
+<script src="script.js"></script>
 ```
 
----
+</body>
+</html>
 
-# 📌 WEBPAGE CONTENT STRUCTURE
+/* =========================
+SCROLL REVEAL ANIMATION
+========================= */
 
-## 1. HERO SECTION
+.reveal {
 
-### Title
+```
+opacity: 0;
 
-# Named Entity Recognition System
+transform: translateY(40px);
 
-### Subtitle
-
-**Understanding Text Through Contextual Artificial Intelligence**
-
-### Brief Description
-
-A BERT-based Named Entity Recognition system designed to automatically identify and classify meaningful entities from unstructured text. The system uses Transformer-based contextual learning and BIO sequence tagging to detect important entities such as people, organizations, locations and other named entities.
-
-### Buttons
-
-* 🔗 View Source Code
-* ▶ Watch Project Presentation
-* 🧠 Explore Architecture
-
----
-
-# 🎥 2. PROJECT PRESENTATION
-
-## Project Demonstration & Explanation
-
-This section should contain your project presentation video.
-
-### Video Placeholder
-
-```text
-┌─────────────────────────────────────────────┐
-│                                             │
-│                                             │
-│          PROJECT PRESENTATION VIDEO         │
-│                                             │
-│        Coming Soon / Embed Video Here       │
-│                                             │
-│                                             │
-└─────────────────────────────────────────────┘
+transition:
+    opacity 0.8s ease,
+    transform 0.8s ease;
 ```
 
-Later, you can replace this section with:
+}
 
-* YouTube Embed
-* Google Drive video
-* GitHub-hosted video
-* Project demonstration recording
+.reveal.visible {
 
-The video should explain:
+```
+opacity: 1;
 
-1. The problem the project solves
-2. What Named Entity Recognition is
-3. The dataset used
-4. BIO tagging
-5. BERT architecture
-6. Training process
-7. Prediction logic
-8. Evaluation metrics
-9. Streamlit interface demonstration
-10. Future applications
-
----
-
-# 💡 3. THE PROBLEM
-
-## Why Named Entity Recognition?
-
-Every day, enormous amounts of unstructured text are generated through:
-
-* News articles
-* Reports
-* Documents
-* Broadcast transcripts
-* Social media
-* Digital archives
-
-Understanding important information inside this text manually is inefficient.
-
-For example:
-
-> "Barack Obama visited New Delhi to attend a meeting with the United Nations."
-
-A human can immediately understand that:
-
-```text
-Barack Obama → PERSON
-New Delhi → LOCATION
-United Nations → ORGANIZATION
+transform: translateY(0);
 ```
 
-However, a computer needs to understand the context of each word.
+}
 
-This project uses a Transformer-based language model to solve that problem.
+.nav-links a.active {
 
----
-
-# 🧠 4. PROJECT LOGIC
-
-## How Does The System Work?
-
-```text
-Raw Text
-   │
-   ▼
-BERT Tokenizer
-   │
-   ▼
-Token IDs + Attention Masks
-   │
-   ▼
-Contextual BERT Encoder
-   │
-   ▼
-Contextual Token Embeddings
-   │
-   ▼
-Dropout Regularization
-   │
-   ▼
-Linear Classification Layer
-   │
-   ▼
-Optional CRF Sequence Decoder
-   │
-   ▼
-BIO Entity Predictions
-   │
-   ▼
-Entity Extraction
-   │
-   ▼
-Streamlit Visualization
+```
+color: var(--accent);
 ```
 
----
+}
 
-# 🏗️ 5. SYSTEM ARCHITECTURE
 
-The architecture should be displayed visually on the webpage.
-
-```text
-                    ┌──────────────────┐
-                    │   INPUT TEXT     │
-                    └────────┬─────────┘
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │ BERT TOKENIZER   │
-                    └────────┬─────────┘
-                             │
-                             ▼
-                 ┌─────────────────────────┐
-                 │ TOKEN IDS + ATTENTION   │
-                 │         MASK            │
-                 └────────────┬────────────┘
-                              │
-                              ▼
-                    ┌──────────────────┐
-                    │   BERT ENCODER   │
-                    │ Contextual Model │
-                    └────────┬─────────┘
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │     DROPOUT      │
-                    └────────┬─────────┘
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │ LINEAR CLASSIFIER│
-                    └────────┬─────────┘
-                             │
-                             ▼
-                 ┌─────────────────────────┐
-                 │ OPTIONAL CRF DECODER    │
-                 └────────────┬────────────┘
-                              │
-                              ▼
-                    ┌──────────────────┐
-                    │ BIO TAG OUTPUT   │
-                    └────────┬─────────┘
-                             │
-                             ▼
-                    ┌──────────────────┐
-                    │ ENTITY EXTRACTION│
-                    └──────────────────┘
-```
-
----
-
-# 🏷️ 6. BIO TAGGING LOGIC
-
-Named Entity Recognition is performed using the BIO tagging system.
-
-| Tag    | Meaning                    |
-| ------ | -------------------------- |
-| O      | Outside an Entity          |
-| B-PER  | Beginning of Person        |
-| I-PER  | Inside Person              |
-| B-ORG  | Beginning of Organization  |
-| I-ORG  | Inside Organization        |
-| B-LOC  | Beginning of Location      |
-| I-LOC  | Inside Location            |
-| B-MISC | Beginning of Miscellaneous |
-| I-MISC | Inside Miscellaneous       |
-
-### Example
-
-```text
-Sentence:
-
-Barack Obama visited New Delhi.
-
-Barack  → B-PER
-Obama   → I-PER
-visited → O
-New     → B-LOC
-Delhi   → I-LOC
-```
-
----
-
-# 🔬 7. CORE MATHEMATICAL LOGIC
-
-## Token Classification
-
-For every token, BERT produces a contextual embedding:
-
-```text
-H = BERT(X)
-```
-
-Where:
-
-```text
-X = Input Tokens
-H = Contextual Token Embeddings
-```
-
-Each token embedding is passed through a classification layer:
-
-```text
-Z = WH + b
-```
-
-Where:
-
-```text
-W = Learnable Weight Matrix
-H = BERT Hidden Representation
-b = Bias
-Z = Classification Logits
-```
-
-The probabilities are calculated using Softmax:
-
-```text
-P(yᵢ | xᵢ) = exp(zᵢ) / Σ exp(zⱼ)
-```
-
-The predicted class is:
-
-```text
-ŷ = argmax(P(yᵢ | xᵢ))
-```
-
----
-
-# 📉 8. TRAINING LOSS
-
-The model learns by minimizing Cross-Entropy Loss.
-
-```text
-L = - Σ yᵢ log(ŷᵢ)
-```
-
-Where:
-
-```text
-yᵢ  = Actual Label
-ŷᵢ  = Predicted Probability
-L   = Total Loss
-```
-
-During training:
-
-```text
-Forward Pass
-      ↓
-Prediction
-      ↓
-Calculate Loss
-      ↓
-Backpropagation
-      ↓
-Update Weights
-      ↓
-Repeat
-```
-
----
-
-# 📊 9. MODEL EVALUATION
-
-The model is evaluated using standard NER metrics.
-
-## Precision
-
-```text
-Precision = True Positive / (True Positive + False Positive)
-```
-
-Measures how many predicted entities were correct.
-
----
-
-## Recall
-
-```text
-Recall = True Positive / (True Positive + False Negative)
-```
-
-Measures how many actual entities were successfully detected.
-
----
-
-## F1 Score
-
-```text
-F1 = 2 × Precision × Recall / (Precision + Recall)
-```
-
-The F1 Score provides a balance between Precision and Recall.
-
----
-
-# 💻 10. CODEBASE LOGIC
-
-The project is divided into independent modules.
-
-| Module            | Responsibility                   |
-| ----------------- | -------------------------------- |
-| `config.py`       | Central project configuration    |
-| `train.py`        | Model training pipeline          |
-| `resume_train.py` | Resume training from checkpoints |
-| `predict.py`      | Run inference on new text        |
-| `eval_test.py`    | Evaluate model performance       |
-| `app.py`          | Streamlit frontend               |
-
-### Code Flow
-
-```text
-config.py
-    │
-    ├───────────────┐
-    ▼               ▼
-train.py         predict.py
-    │               │
-    ▼               ▼
-Model Checkpoint  Entity Predictions
-    │
-    ▼
-eval_test.py
-    │
-    ▼
-Precision / Recall / F1
-    │
-    ▼
-app.py
-    │
-    ▼
-Interactive NER Dashboard
-```
-
----
-
-# 🖥️ 11. INTERACTIVE APPLICATION
-
-The project includes a Streamlit-based interface that allows users to interact with the trained NER model.
-
-Users can:
-
-* Enter text
-* Run Named Entity Recognition
-* Identify important entities
-* View entity categories
-* View model predictions
-* Analyze extracted information
-
-### Interface Preview
-
-```text
-┌───────────────────────────────────────────────┐
-│                                               │
-│       NAMED ENTITY RECOGNITION SYSTEM         │
-│                                               │
-│  Enter Text:                                  │
-│                                               │
-│  [ Barack Obama visited New Delhi...        ] │
-│                                               │
-│              [ ANALYZE TEXT ]                 │
-│                                               │
-│  RESULTS                                      │
-│                                               │
-│  Barack Obama     PERSON                      │
-│  New Delhi        LOCATION                    │
-│                                               │
-└───────────────────────────────────────────────┘
-```
-
----
-
-# 🚀 12. TECHNOLOGY STACK
-
-```text
-Python
-   │
-   ├── PyTorch
-   │
-   ├── Hugging Face Transformers
-   │       │
-   │       └── BERT
-   │
-   ├── Hugging Face Datasets
-   │
-   ├── SeqEval
-   │
-   ├── TensorBoard
-   │
-   └── Streamlit
-```
-
----
-
-# 🌍 13. APPLICATIONS
-
-The system can be applied to:
-
-* 📰 News Analysis
-* 📺 Broadcast Transcript Analysis
-* 📚 Document Processing
-* 🔎 Intelligent Search
-* 🗂️ Information Extraction
-* 🤖 AI Assistants
-* 📊 Content Analytics
-* 🧠 Knowledge Graph Construction
-
----
-
-# 🔮 14. FUTURE DEVELOPMENT
-
-Future improvements may include:
-
-* Real-time Named Entity Recognition
-* Multilingual NER
-* Assamese language support
-* Speech-to-Text integration
-* Broadcast transcript analysis
-* REST API deployment
-* Cloud deployment
-* Docker support
-* Larger Transformer models
-* Custom dataset training
-* Knowledge graph generation
-
----
-
-# 👨‍🏫 MENTORSHIP & GUIDANCE
-
-## Assigned Mentor
-
-### Amaan Irfan Sir
-
-Guidance and mentorship for the development and execution of the project.
-
----
-
-## Faculty Advisor
-
-### Prof. Prithwijit Guha
-
-Academic guidance and faculty supervision.
-
----
-
-# 👨‍💻 PROJECT DEVELOPER
-
-## Pritom Sarma
-
-Electronics and Communication Engineering
-
-Artificial Intelligence • Machine Learning • NLP • Robotics
-
-GitHub:
-
-https://github.com/pritomsarma
-
----
-
-# ⭐ Explore The Project
-
-### Source Code
-
-https://github.com/pritomsarma/Named-Entity-Recognition-System
-
-If you find this project interesting, consider starring the repository.
