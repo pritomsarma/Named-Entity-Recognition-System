@@ -5,917 +5,488 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Named Entity Recognition System</title>
 
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Fira+Code&display=swap" rel="stylesheet">
+
+    <!-- Bulma CSS for layout -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    
+    <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- KaTeX for Math -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 
+    <!-- Prism.js for Code Highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
     <style>
         :root {
-            /* Light Gradient Theme Colors */
-            --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
-            --glass-bg: rgba(255, 255, 255, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-            
-            --text-dark: #1e293b;
-            --text-muted: #475569;
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --accent: #8b5cf6;
-            
-            --font-main: 'Inter', sans-serif;
-            --font-code: 'JetBrains Mono', monospace;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
+            --primary: #4a90e2;
+            --text-main: #363636;
+            --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #f3eaf2 50%, #e6f0fa 100%);
         }
 
         body {
-            font-family: var(--font-main);
-            color: var(--text-dark);
+            font-family: 'Noto Sans', sans-serif;
+            color: var(--text-main);
             background: var(--bg-gradient);
             background-attachment: fixed;
             line-height: 1.6;
-            overflow-x: hidden;
         }
 
-        .bg-shapes {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            overflow: hidden;
-            z-index: -1;
-            pointer-events: none;
-        }
-        
-        .shape {
-            position: absolute;
-            filter: blur(80px);
-            opacity: 0.4;
-            border-radius: 50%;
-        }
-        
-        .shape-1 { top: -10%; left: -10%; width: 500px; height: 500px; background: #93c5fd; }
-        .shape-2 { bottom: -20%; right: -10%; width: 600px; height: 600px; background: #c4b5fd; }
-        .shape-3 { top: 40%; left: 60%; width: 400px; height: 400px; background: #fbcfe8; }
-
-        nav {
-            position: sticky;
-            top: 0;
-            width: 100%;
-            padding: 1.2rem 5%;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        h1, h2, h3, h4, h5, h6, .title, .subtitle {
+            font-family: 'Google Sans', sans-serif;
         }
 
-        .nav-brand {
+        .hero-title {
+            font-size: 2.8rem;
             font-weight: 700;
-            font-size: 1.25rem;
-            color: var(--text-dark);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .nav-brand i { color: var(--primary); }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: var(--text-muted);
-            font-weight: 500;
-            font-size: 0.95rem;
-            transition: color 0.3s ease;
-            position: relative;
-        }
-
-        .nav-links a:hover, .nav-links a.active {
-            color: var(--primary);
-        }
-        
-        .nav-links a.active::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: var(--primary);
-            border-radius: 2px;
-        }
-
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        section {
-            padding: 6rem 0;
-        }
-        
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow);
-            border-radius: 24px;
-            padding: 3rem;
-        }
-
-        .section-header {
+            margin-bottom: 1.5rem;
             text-align: center;
-            margin-bottom: 3rem;
+        }
+
+        .author-block {
+            font-size: 1.25rem;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .affiliation-block {
+            font-size: 1rem;
+            color: #666;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .link-block a {
+            margin: 0 5px;
+            border-radius: 20px;
+            background-color: #363636;
+            color: white;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .link-block a:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .icon.is-small {
+            margin-right: 0.5rem;
+        }
+
+        /* Content Containers */
+        .content-box {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+            padding: 3rem;
+            margin-bottom: 2.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.5);
         }
 
         .section-title {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 1rem;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .section-subtitle {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        .hero {
-            min-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding-top: 2rem;
-        }
-
-        .hero h1 {
-            font-size: clamp(2.5rem, 5vw, 4.5rem);
-            line-height: 1.1;
-            font-weight: 800;
-            margin-bottom: 1.5rem;
-            color: var(--text-dark);
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            color: var(--text-muted);
-            max-width: 700px;
-            margin-bottom: 2.5rem;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
-
-        .btn {
-            padding: 0.8rem 1.8rem;
-            border-radius: 50px;
+            font-size: 1.8rem;
             font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.5rem;
+            text-align: center;
         }
 
-        .btn-primary {
-            background: var(--primary);
-            color: white;
-            border: none;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--text-dark);
-            border: 1px solid var(--text-muted);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--text-dark);
-            background: rgba(0,0,0,0.03);
-            transform: translateY(-2px);
-        }
-
-        .video-wrapper {
-            margin-top: 4rem;
-            width: 100%;
-            max-width: 900px;
-            aspect-ratio: 16/9;
-            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-            border-radius: 24px;
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--glass-shadow);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        
-        .video-wrapper:hover {
-            transform: scale(1.02);
-        }
-
-        .play-btn {
-            width: 80px;
-            height: 80px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2rem;
-            color: var(--primary);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        p {
+            font-size: 1.1rem;
             margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        /* Video placeholders */
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            background: #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #b5b5b5;
+            margin-bottom: 1.5rem;
             transition: all 0.3s ease;
         }
-        
-        .video-wrapper:hover .play-btn {
-            transform: scale(1.1);
-            color: var(--accent);
+
+        .video-wrapper:hover {
+            border-color: var(--primary);
+            background: #f8f9fa;
         }
 
-        .architecture-flow {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-            margin: 3rem 0;
+        .video-placeholder-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #7a7a7a;
         }
 
-        .arch-row {
+        .video-placeholder-content i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        /* CSS Architecture Diagram */
+        .arch-diagram {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 2rem;
-            width: 100%;
             flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 3rem 0;
+            padding: 2rem;
+            background: rgba(245, 247, 250, 0.8);
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
         }
 
         .arch-node {
             background: white;
-            padding: 1.2rem 2rem;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            border: 2px solid var(--primary);
+            padding: 1.2rem 1.5rem;
+            border-radius: 8px;
             text-align: center;
-            font-weight: 600;
-            min-width: 180px;
-            transition: all 0.3s ease;
-            position: relative;
+            font-weight: 500;
+            min-width: 150px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
         }
 
         .arch-node:hover {
-            transform: translateY(-5px);
-            border-color: var(--primary);
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
+            transform: scale(1.05);
+            background: #f0f7ff;
         }
-        
+
         .arch-node i {
             display: block;
             font-size: 1.5rem;
-            color: var(--primary);
             margin-bottom: 0.5rem;
+            color: var(--primary);
         }
 
         .arch-arrow {
-            color: var(--text-muted);
+            color: #a0aec0;
             font-size: 1.5rem;
-            animation: pulse 2s infinite;
         }
 
-        @keyframes pulse {
-            0% { opacity: 0.5; transform: translateX(0); }
-            50% { opacity: 1; transform: translateX(5px); }
-            100% { opacity: 0.5; transform: translateX(0); }
-        }
-
-        .math-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .math-card {
-            background: rgba(255,255,255,0.7);
-            padding: 2rem;
-            border-radius: 16px;
-            border: 1px solid rgba(255,255,255,0.8);
-            transition: all 0.3s ease;
-        }
-
-        .math-card:hover {
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            background: rgba(255,255,255,0.9);
-        }
-
-        .math-card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            color: var(--primary);
-        }
-        
-        .equation-box {
-            background: rgba(241, 245, 249, 0.8);
-            padding: 1rem;
-            border-radius: 8px;
-            overflow-x: auto;
-            text-align: center;
-            margin: 1rem 0;
-            border: 1px solid #e2e8f0;
-        }
-
-        .code-container {
-            position: relative;
-            background: #1e1e1e;
-            border-radius: 12px;
-            overflow: hidden;
-            margin-top: 2rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        .code-header {
-            background: #2d2d2d;
-            padding: 0.8rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #404040;
-        }
-        
-        .code-title {
-            color: #e0e0e0;
-            font-family: var(--font-main);
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .copy-btn {
-            background: transparent;
-            border: 1px solid #555;
-            color: #ccc;
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-family: var(--font-main);
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-        
-        .copy-btn:hover {
-            background: #444;
-            color: #fff;
-        }
-        
-        .copy-btn.copied {
-            background: #22c55e;
+        .highlight-node {
+            background: var(--primary);
             color: white;
-            border-color: #22c55e;
+            border-color: #3174c6;
+        }
+        
+        .highlight-node i {
+            color: white;
         }
 
-        pre {
+        /* Math & Code Blocks */
+        .math-block {
+            background: #fdfdfd;
             padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 1.5rem;
             overflow-x: auto;
-            margin: 0;
         }
 
-        code {
-            font-family: var(--font-code);
+        pre[class*="language-"] {
+            border-radius: 8px !important;
+            margin-bottom: 2rem !important;
+            font-family: 'Fira Code', monospace !important;
             font-size: 0.95rem;
-            line-height: 1.5;
-            color: #d4d4d4;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
         }
-        
-        /* Basic syntax highlighting simulation */
-        .kw { color: #569cd6; font-weight: bold; } /* Keyword */
-        .cl { color: #4ec9b0; } /* Class */
-        .fn { color: #dcdcaa; } /* Function */
-        .st { color: #ce9178; } /* String */
-        .cm { color: #6a9955; font-style: italic; } /* Comment */
-        .op { color: #d4d4d4; } /* Operator */
-        .nm { color: #b5cea8; } /* Number */
 
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .metric-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
+        /* Mentorship Section */
+        .mentorship-box {
             text-align: center;
-            border: 1px solid var(--glass-border);
+            background: linear-gradient(to right, #f8f9fa, #ffffff, #f8f9fa);
+            border-top: 4px solid var(--primary);
         }
         
-        .metric-value {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary);
-            line-height: 1;
-        }
-        
-        .metric-label {
-            color: var(--text-muted);
+        .mentor-title {
             font-size: 0.9rem;
-            margin-top: 0.5rem;
-            font-weight: 500;
-        }
-
-        .graph-placeholder {
-            width: 100%;
-            height: 300px;
-            background: rgba(255,255,255,0.7);
-            border: 1px dashed #cbd5e1;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--text-muted);
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .team-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .team-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 16px;
-            text-align: center;
-            border: 1px solid var(--glass-border);
-            transition: transform 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .team-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-        }
-
-        .team-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-        }
-
-        .team-avatar {
-            width: 80px;
-            height: 80px;
-            background: #f1f5f9;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 auto 1.5rem;
-            font-size: 2rem;
-            color: var(--primary);
-        }
-
-        .team-role {
-            font-size: 0.85rem;
-            color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-weight: 600;
+            color: #7a7a7a;
             margin-bottom: 0.5rem;
         }
-
-        .team-name {
-            font-size: 1.3rem;
-            color: var(--text-dark);
-            font-weight: 700;
-        }
-
-        .reveal {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
-        }
-
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        footer {
-            background: rgba(255,255,255,0.8);
-            padding: 2rem 5%;
-            text-align: center;
-            color: var(--text-muted);
-            border-top: 1px solid var(--glass-border);
-            margin-top: 4rem;
+        
+        .mentor-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #363636;
+            margin-bottom: 1.5rem;
         }
 
         @media (max-width: 768px) {
-            .nav-links { display: none; } /* Simple mobile adaptation */
-            .arch-row { flex-direction: column; gap: 1rem; }
-            .arch-arrow { transform: rotate(90deg); margin: 0.5rem 0; }
+            .arch-diagram {
+                flex-direction: column;
+            }
+            .arch-arrow {
+                transform: rotate(90deg);
+            }
+            .content-box {
+                padding: 1.5rem;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="bg-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-    </div>
-
-    <nav>
-        <a href="#" class="nav-brand">
-            <i class="fa-solid fa-brain"></i> NER Pipeline
-        </a>
-        <div class="nav-links">
-            <a href="#intro" class="active">Introduction</a>
-            <a href="#architecture">Architecture</a>
-            <a href="#logic">Logic & Math</a>
-            <a href="#code">Implementation</a>
-            <a href="#team">Acknowledgements</a>
-        </div>
-        <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System" target="_blank" class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
-            <i class="fa-brands fa-github"></i> GitHub Repo
-        </a>
-    </nav>
-
-    <section id="intro" class="hero container reveal">
-        <h1>Named Entity <br><span style="background: linear-gradient(90deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Recognition System</span></h1>
-        <p>A sophisticated natural language processing pipeline designed to automatically identify, extract, and classify key information—such as names, organizations, and locations—from unstructured text using BiLSTM and CRF models.</p>
-        
-        <div class="btn-group">
-            <a href="#code" class="btn btn-primary"><i class="fa-solid fa-code"></i> View Source Code</a>
-            <a href="#" class="btn btn-secondary"><i class="fa-solid fa-laptop-code"></i> Live Demo</a>
-        </div>
-
-        <div class="video-wrapper">
-            <div class="play-btn">
-                <i class="fa-solid fa-play"></i>
-            </div>
-            <h3>Project Presentation Video</h3>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Click to embed/play presentation</p>
-        </div>
-    </section>
-
-    <section id="architecture" class="container reveal">
-        <div class="glass-card">
-            <div class="section-header">
-                <h2 class="section-title">System Architecture</h2>
-                <p class="section-subtitle">Visualizing the flow of data from raw text sequence to predicted named entity tags.</p>
-            </div>
-
-            <div class="architecture-flow">
-                <div class="arch-row">
-                    <div class="arch-node">
-                        <i class="fa-regular fa-file-lines"></i>
-                        Input Text Sequence
+    <section class="section">
+        <div class="container is-max-desktop">
+            <div class="content-box" style="background: transparent; box-shadow: none; border: none; padding-bottom: 0;">
+                <h1 class="hero-title">Named Entity Recognition System</h1>
+                
+                <div class="is-flex is-justify-content-center is-flex-wrap-wrap mb-4">
+                    <div class="author-block mx-3">
+                        <strong>Pritom Sarma</strong>
                     </div>
                 </div>
                 
-                <i class="fa-solid fa-arrow-down arch-arrow"></i>
+                <div class="affiliation-block">
+                    <span>Internship Project Report</span>
+                </div>
+
+                <div class="column has-text-centered link-block">
+                    <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System" target="_blank" class="button is-rounded is-dark">
+                        <span class="icon is-small">
+                            <i class="fab fa-github"></i>
+                        </span>
+                        <span>Code</span>
+                    </a>
+                    <a href="#workflow-video" class="button is-rounded is-dark">
+                        <span class="icon is-small">
+                            <i class="fas fa-network-wired"></i>
+                        </span>
+                        <span>Workflow Video</span>
+                    </a>
+                    <a href="#demo-video" class="button is-rounded is-dark">
+                        <span class="icon is-small">
+                            <i class="fas fa-play-circle"></i>
+                        </span>
+                        <span>Demo Video</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="content-box">
+                <h2 class="section-title">Abstract</h2>
+                <div class="content">
+                    <p>
+                        Named Entity Recognition (NER) is a core subtask of Information Extraction in Natural Language Processing (NLP) that aims to locate and classify named entities mentioned in unstructured text into pre-defined categories such as person names, organizations, locations, medical codes, time expressions, quantities, monetary values, and percentages.
+                    </p>
+                    <p>
+                        This project focuses on building a highly robust and scalable NER pipeline leveraging state-of-the-art Deep Learning architectures. By capturing both deep contextual semantic meanings through embeddings and sequence modeling, coupled with a Conditional Random Field (CRF) layer, the model accurately respects sequential tag dependencies (e.g., ensuring an <code>I-ORG</code> tag strictly follows a <code>B-ORG</code> tag). This hybrid approach guarantees highly accurate entity tagging across complex, ambiguous domains.
+                    </p>
+                </div>
+            </div>
+
+            <div class="content-box" id="videos">
+                <h2 class="section-title">Project Demonstrations</h2>
+                <p class="has-text-centered mb-5">The following presentations outline the underlying workflow architecture and a live operational demonstration of the NER system.</p>
                 
-                <div class="arch-row">
-                    <div class="arch-node">
-                        <i class="fa-solid fa-language"></i>
-                        Tokenizer
+                <h3 class="title is-4 mt-5" id="workflow-video">Workflow Video</h3>
+                <div class="video-wrapper">
+                    <!-- Replace this content with your iframe when ready -->
+                    <div class="video-placeholder-content">
+                        <i class="fas fa-project-diagram"></i>
+                        <p class="title is-5">Workflow Video Placeholder</p>
+                        <p class="subtitle is-6">Embed your presentation/workflow video here</p>
                     </div>
                 </div>
 
-                <i class="fa-solid fa-arrow-down arch-arrow"></i>
-
-                <div class="arch-row">
-                    <div class="arch-node">
-                        <i class="fa-solid fa-layer-group"></i>
-                        Word Embeddings (GloVe)
-                    </div>
-                </div>
-
-                <i class="fa-solid fa-arrow-down arch-arrow"></i>
-
-                <div class="arch-row">
-                    <div class="arch-node" style="border-color: var(--primary); background: rgba(59, 130, 246, 0.05);">
-                        <i class="fa-solid fa-right-left"></i>
-                        Bi-directional LSTM
-                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal; margin-top: 5px;">Contextual Features</div>
-                    </div>
-                </div>
-
-                <i class="fa-solid fa-arrow-down arch-arrow"></i>
-
-                <div class="arch-row">
-                    <div class="arch-node" style="border-color: var(--accent); background: rgba(139, 92, 246, 0.05);">
-                        <i class="fa-solid fa-network-wired"></i>
-                        Conditional Random Field (CRF)
-                        <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal; margin-top: 5px;">Sequence Optimization</div>
-                    </div>
-                </div>
-
-                <i class="fa-solid fa-arrow-down arch-arrow"></i>
-
-                <div class="arch-row">
-                    <div class="arch-node">
-                        <i class="fa-solid fa-tags"></i>
-                        Predicted BIO Tags
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="logic" class="container reveal">
-        <div class="glass-card">
-            <div class="section-header">
-                <h2 class="section-title">Core Logic & Mathematics</h2>
-                <p class="section-subtitle">Understanding the mathematical foundations powering the BiLSTM-CRF architecture.</p>
-            </div>
-
-            <div class="math-grid">
-                <div class="math-card">
-                    <h3>1. BiLSTM Forward Pass</h3>
-                    <p>The BiLSTM computes hidden states by processing the sequence both forwards and backwards, capturing context from both directions.</p>
-                    <div class="equation-box">
-                        $$ \overrightarrow{h}_t = LSTM(x_t, \overrightarrow{h}_{t-1}) $$
-                        $$ \overleftarrow{h}_t = LSTM(x_t, \overleftarrow{h}_{t+1}) $$
-                        $$ h_t = [\overrightarrow{h}_t ; \overleftarrow{h}_t] $$
-                    </div>
-                </div>
-                
-                <div class="math-card">
-                    <h3>2. CRF Score Function</h3>
-                    <p>The CRF layer calculates a sequence score by combining the emission scores (from BiLSTM) and learned transition matrices.</p>
-                    <div class="equation-box">
-                        $$ S(X, y) = \sum_{i=1}^n P_{i, y_i} + \sum_{i=1}^{n+1} A_{y_{i-1}, y_i} $$
-                    </div>
-                </div>
-
-                <div class="math-card">
-                    <h3>3. Log-Likelihood Loss</h3>
-                    <p>During training, we minimize the negative log-likelihood of the true tag sequence over all possible sequences.</p>
-                    <div class="equation-box">
-                        $$ Loss = - \log \left( \frac{e^{S(X, y_{true})}}{\sum_{y' \in Y} e^{S(X, y')}} \right) $$
+                <h3 class="title is-4 mt-6" id="demo-video">Demonstration Video</h3>
+                <div class="video-wrapper">
+                    <!-- Replace this content with your iframe when ready -->
+                    <div class="video-placeholder-content">
+                        <i class="fas fa-laptop-code"></i>
+                        <p class="title is-5">Demonstration Video Placeholder</p>
+                        <p class="subtitle is-6">Embed your live demo video here</p>
                     </div>
                 </div>
             </div>
 
-            <div style="margin-top: 4rem;">
-                <h3 style="margin-bottom: 1.5rem; text-align: center; color: var(--text-dark);">Model Performance Metrics</h3>
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-value">91.4%</div>
-                        <div class="metric-label">Overall F1 Score</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">93.2%</div>
-                        <div class="metric-label">Precision</div>
-                    </div>
-                    <div class="metric-card">
-                        <div class="metric-value">89.7%</div>
-                        <div class="metric-label">Recall</div>
-                    </div>
+            <div class="content-box">
+                <h2 class="section-title">Architecture & Workflow</h2>
+                <div class="content">
+                    <p>
+                        The system utilizes a pipeline that converts raw unstructured text into structured BIO (Begin, Inside, Outside) tags. The tokens are initially passed through an embedding layer (e.g., Word2Vec, GloVe, or BERT embeddings), encoded using a Bi-directional Long Short-Term Memory (BiLSTM) network to capture past and future context, and finally decoded using a CRF layer to model the sequence constraints.
+                    </p>
                 </div>
                 
-                <div class="graph-placeholder">
-                    <i class="fa-solid fa-chart-line" style="font-size: 3rem; color: #94a3b8;"></i>
-                    <p>Training & Validation Loss Convergence Graph Placeholder</p>
+                <!-- CSS Based Architecture Diagram -->
+                <div class="arch-diagram">
+                    <div class="arch-node">
+                        <i class="fas fa-font"></i>
+                        Input Text
+                    </div>
+                    <i class="fas fa-arrow-right arch-arrow"></i>
+                    
+                    <div class="arch-node">
+                        <i class="fas fa-cut"></i>
+                        Tokenization & Embeddings
+                    </div>
+                    <i class="fas fa-arrow-right arch-arrow"></i>
+                    
+                    <div class="arch-node highlight-node">
+                        <i class="fas fa-project-diagram"></i>
+                        BiLSTM Encoder
+                    </div>
+                    <i class="fas fa-arrow-right arch-arrow"></i>
+                    
+                    <div class="arch-node highlight-node">
+                        <i class="fas fa-layer-group"></i>
+                        CRF Layer
+                    </div>
+                    <i class="fas fa-arrow-right arch-arrow"></i>
+                    
+                    <div class="arch-node">
+                        <i class="fas fa-tags"></i>
+                        Entity Tags Output
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <section id="code" class="container reveal">
-        <div class="glass-card">
-            <div class="section-header">
-                <h2 class="section-title">Critical Implementation</h2>
-                <p class="section-subtitle">PyTorch implementation of the BiLSTM-CRF model initialization and forward propagation.</p>
-            </div>
+            <div class="content-box">
+                <h2 class="section-title">Mathematical Formulation</h2>
+                <div class="content">
+                    <p>
+                        The integration of a Conditional Random Field (CRF) on top of the BiLSTM outputs is essential for sequence labeling tasks. Instead of decoding independently, the CRF layer models the transition probabilities between tags. 
+                    </p>
+                    
+                    <div class="math-block">
+                        <strong>1. Emission and Transition Score:</strong><br>
+                        For a sequence of words $X = \{x_1, ..., x_n\}$ and a sequence of predicted tags $y = \{y_1, ..., y_n\}$, we define the score of the sequence as the sum of emission scores from the BiLSTM network and the transition scores from the CRF matrix:
+                        $$ s(X, y) = \sum_{i=1}^n P_{i, y_i} + \sum_{i=0}^n A_{y_i, y_{i+1}} $$
+                        <span class="is-size-7 has-text-grey">Where $P_{i, y_i}$ is the emission score of tag $y_i$ for word $x_i$, and $A_{y_i, y_{i+1}}$ is the transition score from tag $y_i$ to $y_{i+1}$.</span>
+                    </div>
 
-            <div class="code-container">
-                <div class="code-header">
-                    <div class="code-title"><i class="fa-brands fa-python"></i> model.py</div>
-                    <button class="copy-btn" id="copyBtn">
-                        <i class="fa-regular fa-copy"></i> Copy Code
-                    </button>
+                    <div class="math-block">
+                        <strong>2. Sequence Probability:</strong><br>
+                        The score is then transformed into a probability distribution over all possible tag sequences $Y_X$ using a softmax function over the sequence space:
+                        $$ p(y|X) = \frac{e^{s(X, y)}}{\sum_{\tilde{y} \in Y_X} e^{s(X, \tilde{y})}} $$
+                    </div>
+
+                    <div class="math-block">
+                        <strong>3. Log-Likelihood Loss:</strong><br>
+                        During training, we minimize the negative log-likelihood of the correct tag sequence:
+                        $$ \mathcal{L} = - \log(p(y|X)) = \log \left( \sum_{\tilde{y} \in Y_X} e^{s(X, \tilde{y})} \right) - s(X, y) $$
+                    </div>
                 </div>
-<pre><code id="codeBlock"><span class="kw">import</span> torch
-<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
-<span class="kw">from</span> torchcrf <span class="kw">import</span> CRF
-
-<span class="kw">class</span> <span class="cl">BiLSTM_CRF</span>(nn.Module):
-    <span class="kw">def</span> <span class="fn">__init__</span>(self, vocab_size, tagset_size, embedding_dim, hidden_dim):
-        <span class="kw">super</span>(BiLSTM_CRF, self).<span class="fn">__init__</span>()
-        self.embedding_dim <span class="op">=</span> embedding_dim
-        self.hidden_dim <span class="op">=</span> hidden_dim
-        self.vocab_size <span class="op">=</span> vocab_size
-        self.tagset_size <span class="op">=</span> tagset_size
-
-        <span class="cm"># Embedding Layer</span>
-        self.word_embeds <span class="op">=</span> nn.Embedding(vocab_size, embedding_dim)
-        
-        <span class="cm"># Bi-directional LSTM</span>
-        self.lstm <span class="op">=</span> nn.LSTM(embedding_dim, hidden_dim <span class="op">//</span> <span class="nm">2</span>,
-                            num_layers<span class="op">=</span><span class="nm">1</span>, bidirectional<span class="op">=</span><span class="kw">True</span>, batch_first<span class="op">=</span><span class="kw">True</span>)
-
-        <span class="cm"># Maps LSTM outputs to tag space</span>
-        self.hidden2tag <span class="op">=</span> nn.Linear(hidden_dim, tagset_size)
-        
-        <span class="cm"># CRF Layer for sequence optimization</span>
-        self.crf <span class="op">=</span> CRF(tagset_size, batch_first<span class="op">=</span><span class="kw">True</span>)
-
-    <span class="kw">def</span> <span class="fn">forward</span>(self, sentence, mask<span class="op">=</span><span class="kw">None</span>):
-        <span class="cm"># Get BiLSTM emission scores</span>
-        embeds <span class="op">=</span> self.word_embeds(sentence)
-        lstm_out, _ <span class="op">=</span> self.lstm(embeds)
-        emissions <span class="op">=</span> self.hidden2tag(lstm_out)
-        
-        <span class="cm"># Decode using Viterbi algorithm through CRF</span>
-        prediction <span class="op">=</span> self.crf.decode(emissions, mask<span class="op">=</span>mask)
-        <span class="kw">return</span> prediction</code></pre>
             </div>
+
+            <div class="content-box">
+                <h2 class="section-title">Critical Code Implementations</h2>
+                <div class="content">
+                    <p>
+                        Below is a representative PyTorch implementation snippet defining the core neural network architecture for the NER task, specifically mapping the sequential hidden states into the required classification space before CRF processing.
+                    </p>
+                </div>
+
+<pre><code class="language-python">import torch
+import torch.nn as nn
+
+class BiLSTM_CRF_NER(nn.Module):
+    def __init__(self, vocab_size, tagset_size, embedding_dim, hidden_dim):
+        super(BiLSTM_CRF_NER, self).__init__()
+        self.embedding_dim = embedding_dim
+        self.hidden_dim = hidden_dim
+        self.vocab_size = vocab_size
+        self.tagset_size = tagset_size
+
+        # 1. Embedding Layer
+        self.word_embeds = nn.Embedding(vocab_size, embedding_dim)
+        
+        # 2. BiLSTM Encoder
+        self.lstm = nn.LSTM(embedding_dim, hidden_dim // 2,
+                            num_layers=1, bidirectional=True, batch_first=True)
+        
+        # 3. Linear Layer mapping to tag space
+        self.hidden2tag = nn.Linear(hidden_dim, tagset_size)
+        
+        # 4. (Implementation of CRF layer usually follows here)
+
+    def _get_lstm_features(self, sentence):
+        """Pass input through Embeddings and BiLSTM"""
+        embeds = self.word_embeds(sentence)
+        # Sequence encoding
+        lstm_out, _ = self.lstm(embeds)
+        # Emission scores mapping
+        lstm_feats = self.hidden2tag(lstm_out)
+        return lstm_feats
+
+    def forward(self, sentence):
+        """Forward pass predicting the best tag sequence"""
+        # Get emission scores from BiLSTM
+        lstm_feats = self._get_lstm_features(sentence)
+        
+        # Decoded using Viterbi Algorithm (Assuming CRF module is applied)
+        # score, tag_seq = self.crf_layer.decode(lstm_feats)
+        # return score, tag_seq
+        return lstm_feats
+</code></pre>
+            </div>
+
+            <div class="content-box mentorship-box">
+                <h2 class="section-title" style="border:none; margin-bottom: 2rem;">Mentorship & Acknowledgements</h2>
+                
+                <div class="columns is-multiline is-centered">
+                    <div class="column is-5">
+                        <div class="mentor-title">Assigned Mentors</div>
+                        <div class="mentor-name">Aswini Jacob Gigi</div>
+                        <div class="mentor-name">Amaan Irfan</div>
+                    </div>
+                    
+                    <div class="column is-5">
+                        <div class="mentor-title">Faculty Advisor</div>
+                        <div class="mentor-name">Prof. Prithwijit Guha</div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </section>
 
-    <section id="team" class="container reveal">
-        <div class="section-header">
-            <h2 class="section-title">Acknowledgements</h2>
-            <p class="section-subtitle">Grateful for the guidance, mentorship, and support provided throughout the development of this project.</p>
+    <footer class="footer" style="background: transparent; padding-top: 0;">
+        <div class="content has-text-centered">
+            <p>
+                <strong>NER System Project Page</strong> based on academic templates. <br>
+                Rendered with KaTeX and Prism.js.
+            </p>
         </div>
-
-        <div class="team-grid">
-            <div class="team-card">
-                <div class="team-avatar"><i class="fa-solid fa-chalkboard-user"></i></div>
-                <div class="team-role">Assigned Mentor</div>
-                <div class="team-name">Assigned Mentor</div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">Provided continuous technical feedback and architectural guidance for the model.</p>
-            </div>
-            
-            <div class="team-card">
-                <div class="team-avatar"><i class="fa-solid fa-user-tie"></i></div>
-                <div class="team-role">Industry Mentor</div>
-                <div class="team-name">Amaan Irfan Sir</div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">Guided the project scope, real-world application mapping, and deployment logic.</p>
-            </div>
-
-            <div class="team-card">
-                <div class="team-avatar"><i class="fa-solid fa-graduation-cap"></i></div>
-                <div class="team-role">Faculty Advisor</div>
-                <div class="team-name">Prof. Prithwijit Guha</div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">Oversaw the academic integrity and theoretical foundations of the deep learning pipeline.</p>
-            </div>
-        </div>
-    </section>
-
-    <footer>
-        <p>&copy; <span id="year"></span> Named Entity Recognition System Report. All rights reserved.</p>
     </footer>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            // Set current year
-            document.getElementById('year').textContent = new Date().getFullYear();
-
-            // Render KaTeX Math equations
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize KaTeX for Math equations
             renderMathInElement(document.body, {
-              delimiters: [
-                  {left: '$$', right: '$$', display: true},
-                  {left: '$', right: '$', display: false},
-                  {left: '\\(', right: '\\)', display: false},
-                  {left: '\\[', right: '\\]', display: true}
-              ],
-              throwOnError: false
-            });
-
-            // Scroll Reveal Animation via IntersectionObserver
-            const reveals = document.querySelectorAll('.reveal');
-            
-            const revealOptions = {
-                threshold: 0.15,
-                rootMargin: "0px 0px -50px 0px"
-            };
-
-            const revealObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('active');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, revealOptions);
-
-            reveals.forEach(reveal => {
-                revealObserver.observe(reveal);
-            });
-
-            // Sticky Navbar Active State Scroll Spy
-            const sections = document.querySelectorAll('section');
-            const navLinks = document.querySelectorAll('.nav-links a');
-
-            window.addEventListener('scroll', () => {
-                let current = '';
-                sections.forEach(section => {
-                    const sectionTop = section.offsetTop;
-                    const sectionHeight = section.clientHeight;
-                    if (scrollY >= (sectionTop - 200)) {
-                        current = section.getAttribute('id');
-                    }
-                });
-
-                navLinks.forEach(link => {
-                    link.classList.remove('active');
-                    if (link.getAttribute('href').includes(current)) {
-                        link.classList.add('active');
-                    }
-                });
-            });
-
-            // Copy Code to Clipboard functionality
-            const copyBtn = document.getElementById('copyBtn');
-            const codeBlock = document.getElementById('codeBlock');
-
-            copyBtn.addEventListener('click', () => {
-                // Extract clean text without HTML tags for copying
-                const textToCopy = codeBlock.innerText;
-                
-                // Use execCommand for better iFrame compatibility as requested
-                const textarea = document.createElement('textarea');
-                textarea.value = textToCopy;
-                textarea.style.position = 'fixed'; // Prevent scrolling to bottom
-                document.body.appendChild(textarea);
-                textarea.select();
-                
-                try {
-                    document.execCommand('copy');
-                    
-                    // UI feedback
-                    const originalText = copyBtn.innerHTML;
-                    copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
-                    copyBtn.classList.add('copied');
-                    
-                    setTimeout(() => {
-                        copyBtn.innerHTML = originalText;
-                        copyBtn.classList.remove('copied');
-                    }, 2000);
-                } catch (err) {
-                    console.error('Failed to copy', err);
-                    copyBtn.innerHTML = '<i class="fa-solid fa-xmark"></i> Error';
-                } finally {
-                    document.body.removeChild(textarea);
-                }
+                delimiters: [
+                    {left: '$$', right: '$$', display: true},
+                    {left: '$', right: '$', display: false}
+                ],
+                throwOnError: false
             });
         });
     </script>
