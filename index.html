@@ -1,67 +1,457 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Broadcast NER — BERT + CRF Named Entity Recognition | Internship Report</title>
 <meta name="description" content="Fine-tuning BERT with a CRF decoding layer for structured PERSON / ORGANISATION / LOCATION / MISC entity extraction from broadcast text — an IIT Guwahati internship project.">
 
-<!-- Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-<!-- KaTeX -->
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 
-<!-- Custom Stylesheet -->
-<link rel="stylesheet" href="assets/css/style.css">
-</head>
-<body id="top">
+<style>
+  /* ================= CSS VARIABLES & RESET ================= */
+  :root {
+    --bg-dark: #050505;
+    --bg-card: rgba(255, 255, 255, 0.03);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --text-main: #9ca3af;
+    --text-bright: #f3f4f6;
+    --font-sans: 'Inter', sans-serif;
+    --font-serif: 'Fraunces', serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+    
+    /* Gradients */
+    --grad-primary: linear-gradient(135deg, #FF3366, #7C3AED, #06B6D4);
+    --grad-glow: linear-gradient(135deg, rgba(255,51,102,0.2), rgba(124,58,237,0.2), rgba(6,182,212,0.2));
+    
+    /* Entity Colors */
+    --c-per: #3b82f6;
+    --c-org: #10b981;
+    --c-loc: #f59e0b;
+    --c-misc: #8b5cf6;
+  }
 
-<!-- Ambient Background Glows -->
-<div class="bg-glows">
-  <div class="glow glow-1"></div>
-  <div class="glow glow-2"></div>
-</div>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html {
+    scroll-behavior: smooth;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  body {
+    position: relative;
+  }
+
+  /* Animated Background Mesh */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.05), transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.05), transparent 30%),
+                radial-gradient(circle at 20% 80%, rgba(255, 51, 102, 0.05), transparent 30%);
+    z-index: -1;
+    animation: rotateMesh 30s linear infinite;
+  }
+
+  @keyframes rotateMesh {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  h1, h2, h3, h4, h5 {
+    font-family: var(--font-serif);
+    color: var(--text-bright);
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+
+  p { margin-bottom: 1.2rem; font-weight: 300; }
+  a { color: #06B6D4; text-decoration: none; transition: 0.3s; }
+  a:hover { color: #FF3366; }
+  
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  .mono, code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: rgba(255,255,255,0.08);
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    color: #e5e7eb;
+  }
+
+  /* ================= NAVIGATION ================= */
+  .nav {
+    position: fixed;
+    top: 0; width: 100%;
+    background: rgba(5, 5, 5, 0.7);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1000;
+    padding: 1rem 0;
+    transition: all 0.3s ease;
+  }
+  .nav-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+  .wordmark {
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-bright);
+    letter-spacing: -0.5px;
+  }
+  .wordmark span { color: #7C3AED; }
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+  .nav-links a {
+    color: var(--text-main);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .nav-links a:hover { color: var(--text-bright); }
+  .nav-cta {
+    border: 1px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+  }
+  .nav-cta:hover { background: var(--grad-primary); border-color: transparent; color: #fff;}
+
+  /* ================= HERO SECTION ================= */
+  .hero {
+    padding: 12rem 0 6rem;
+    text-align: center;
+    position: relative;
+  }
+  .hero-tag {
+    display: inline-block;
+    padding: 0.3rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 30px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: #06B6D4;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    background: var(--grad-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 1.5rem;
+    letter-spacing: -1px;
+  }
+  .hero .lede {
+    font-size: 1.25rem;
+    max-width: 700px;
+    margin: 0 auto 3rem;
+  }
+  .hero-actions { display: flex; gap: 1rem; justify-content: center; margin-bottom: 4rem; }
+  .btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-primary {
+    background: var(--grad-primary);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+  }
+  .btn-primary:hover { color: #fff; box-shadow: 0 6px 20px rgba(124, 58, 237, 0.5); }
+  .btn-ghost {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-bright);
+  }
+
+  /* Hero Terminal/Demo */
+  .hero-demo {
+    background: #0d0f14;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: left;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-demo::before {
+    content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+    background: var(--grad-primary);
+  }
+  .hero-demo-label { font-family: var(--font-mono); color: #6b7280; font-size: 0.85rem; margin-bottom: 1rem; }
+  .annotated { font-size: 1.2rem; line-height: 2; color: #d1d5db; }
+  .tag {
+    padding: 0.2rem 0.4rem;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.1);
+    font-weight: 500;
+  }
+  .tag sup { font-size: 0.6rem; opacity: 0.7; margin-left: 2px; text-transform: uppercase; }
+  .tag.per { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+  .tag.org { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .tag.loc { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .tag.misc { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+  
+  .legend { margin-top: 1.5rem; display: flex; gap: 1.5rem; font-size: 0.85rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;}
+  .legend span { display: flex; align-items: center; gap: 0.5rem; color: #9ca3af; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .dot.per { background: var(--c-per); box-shadow: 0 0 8px var(--c-per); }
+  .dot.org { background: var(--c-org); box-shadow: 0 0 8px var(--c-org); }
+  .dot.loc { background: var(--c-loc); box-shadow: 0 0 8px var(--c-loc); }
+  .dot.misc { background: var(--c-misc); box-shadow: 0 0 8px var(--c-misc); }
+
+  /* ================= LAYOUT & SECTIONS ================= */
+  section { padding: 6rem 0; border-top: 1px solid var(--border-color); }
+  .section-tag {
+    font-family: var(--font-mono);
+    color: #7C3AED;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .section-head { margin-bottom: 3rem; }
+  .section-head h2 { font-size: 2.5rem; }
+  
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; }
+  
+  .callout {
+    background: var(--bg-card);
+    border-left: 4px solid #06B6D4;
+    padding: 1.5rem;
+    border-radius: 0 8px 8px 0;
+    color: var(--text-bright);
+    font-style: italic;
+  }
+
+  /* ================= PIPELINES & STEPS ================= */
+  .steps, .pipeline { display: flex; flex-direction: column; gap: 1rem; }
+  .step, .pipe-stage {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    border-radius: 12px;
+    display: flex;
+    gap: 1.5rem;
+    transition: transform 0.3s, background 0.3s;
+    backdrop-filter: blur(10px);
+  }
+  .step:hover, .pipe-stage:hover {
+    transform: translateX(10px);
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.15);
+  }
+  .step-num, .pipe-num {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    color: #06B6D4;
+    font-weight: 600;
+  }
+  .pipe-num { background: rgba(6,182,212,0.1); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; flex-shrink: 0;}
+  .pipe-meta { font-family: var(--font-mono); font-size: 0.8rem; color: #a78bfa; margin-top: 0.5rem; }
+
+  /* Code Blocks */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: #e5e7eb;
+    overflow-x: auto;
+    margin-top: 1rem;
+    line-height: 1.5;
+  }
+  .code-block .c { color: #6b7280; } /* Comment */
+  .code-block .fn { color: #60a5fa; } /* Function/Command */
+  .code-block .s { color: #34d399; } /* String */
+  .code-block .k { color: #c678dd; } /* Keyword */
+
+  /* ================= MATH & CARDS ================= */
+  .math-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  .math-block h4 { color: #a78bfa; margin-bottom: 1rem; text-align: left;}
+  .math-block p { text-align: left; }
+  .math-eq { margin: 1.5rem 0; font-size: 1.2rem; overflow-x: auto; padding: 1rem 0;}
+
+  /* ================= TABLES ================= */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    font-size: 0.95rem;
+  }
+  th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+  th { font-family: var(--font-mono); color: #9ca3af; font-weight: 500; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .total td { font-weight: 600; color: var(--text-bright); border-top: 2px solid var(--border-color); }
+
+  /* ================= STATS ================= */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+  .stat {
+    background: var(--bg-card);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    text-align: center;
+  }
+  .stat .num {
+    display: block;
+    font-size: 2.5rem;
+    font-family: var(--font-serif);
+    background: var(--grad-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+  }
+  .stat .lbl { font-family: var(--font-mono); font-size: 0.85rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;}
+
+  /* ================= TABS ================= */
+  .eng-tabs {
+    display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); margin-bottom: 2rem;
+    overflow-x: auto; padding-bottom: 0.5rem;
+  }
+  .eng-tab {
+    background: none; border: none; color: var(--text-main);
+    font-family: var(--font-mono); font-size: 0.9rem;
+    padding: 0.5rem 1rem; cursor: pointer; transition: 0.3s;
+    border-radius: 6px;
+  }
+  .eng-tab:hover { background: rgba(255,255,255,0.05); color: var(--text-bright); }
+  .eng-tab.active { background: rgba(124, 58, 237, 0.2); color: #c4b5fd; border: 1px solid rgba(124,58,237,0.3); }
+  .eng-panel { display: none; animation: fadeIn 0.5s ease; }
+  .eng-panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ================= GRAPHS & VIDEO SLOTS ================= */
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  .chart-full { grid-column: 1 / -1; }
+  .chart-card {
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 12px; padding: 2rem;
+  }
+  .chart-card h4 { margin-bottom: 0.5rem; }
+  .chart-card .cap { font-size: 0.85rem; margin-bottom: 1.5rem; }
+  canvas { width: 100% !important; height: auto !important; min-height: 250px; }
+
+  .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 4rem; }
+  .video-frame {
+    background: #000; aspect-ratio: 16/9; border-radius: 12px;
+    border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem; position: relative; overflow: hidden;
+  }
+  .video-placeholder { text-align: center; color: #6b7280; font-family: var(--font-mono); font-size: 0.85rem;}
+  .play-ring { width: 50px; height: 50px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; position: relative;}
+  .play-ring::after { content: ''; border-left: 12px solid #fff; border-top: 8px solid transparent; border-bottom: 8px solid transparent; margin-left: 5px; }
+
+  /* ================= TEAM & FOOTER ================= */
+  .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
+  .team-card { background: var(--bg-card); border: 1px solid var(--border-color); padding: 2rem; border-radius: 12px; text-align: center; transition: 0.3s; }
+  .team-card:hover { transform: translateY(-5px); border-color: #7C3AED; box-shadow: 0 10px 30px rgba(124,58,237,0.1); }
+  .team-role { font-family: var(--font-mono); font-size: 0.8rem; color: #06B6D4; margin-bottom: 1rem; text-transform: uppercase;}
+  .team-name { font-size: 1.25rem; font-family: var(--font-serif); color: #fff; }
+  .team-org { font-size: 0.9rem; margin-top: 0.5rem; }
+
+  footer { padding: 4rem 0; border-top: 1px solid var(--border-color); background: #000; text-align: center; }
+  .footer-links { display: flex; justify-content: center; gap: 2rem; margin-bottom: 1.5rem; }
+  .footer-note { font-family: var(--font-mono); font-size: 0.85rem; color: #6b7280; }
+
+  /* ================= ANIMATION CLASSES ================= */
+  .animate-up {
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-up.in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .grid-2, .chart-grid, .video-grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 2.5rem; }
+    .nav-links { display: none; } /* Simplified mobile nav for demo */
+    .step { flex-direction: column; gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
 
 <!-- ============================== NAV ============================== -->
 <nav class="nav">
   <div class="nav-inner">
-    <a class="wordmark" href="#top">broadcast<span>.ner</span></a>
+    <a class="wordmark" href="#top">broadcast<span>-ner</span></a>
     <ul class="nav-links">
       <li><a href="#introduction">Intro</a></li>
-      <li><a href="#setup">Setup</a></li>
       <li><a href="#architecture">Architecture</a></li>
       <li><a href="#mathematics">Math</a></li>
-      <li><a href="#code-logic">Code</a></li>
-      <li><a href="#graphs">Graphs</a></li>
       <li><a href="#performance">Performance</a></li>
-      <li><a href="#engineering">Engineering</a></li>
-      <li><a href="#team">Team</a></li>
     </ul>
     <a class="nav-cta" href="https://github.com/pritomsarma/Named-Entity-Recognition-System" target="_blank" rel="noopener">GitHub ↗</a>
   </div>
 </nav>
 
 <!-- ============================== HERO ============================== -->
-<header class="hero">
+<header class="hero animate-up" id="top">
   <div class="container">
-    <div class="hero-badge-wrapper">
-      <span class="hero-tag">IIT Guwahati Internship Project</span>
-    </div>
+    <div class="hero-tag">IIT Guwahati Internship Project</div>
     <h1>A BERT + CRF engine for structured entity extraction from broadcast text</h1>
     <p class="lede">Fine-tuning <code class="mono">bert-base-uncased</code> on CoNLL-2003 with BIO tagging, a CRF decoding head, and two-phase discriminative fine-tuning — evaluated with precision, recall and F1.</p>
 
     <div class="hero-actions">
-      <a class="btn btn-primary" href="#videos">Watch walkthroughs</a>
+      <a class="btn btn-primary" href="#videos">Watch project videos</a>
       <a class="btn btn-ghost" href="https://github.com/pritomsarma/Named-Entity-Recognition-System" target="_blank" rel="noopener">View source code</a>
     </div>
 
-    <div class="hero-demo">
-      <div class="hero-demo-label">
-        <span class="dot-live"></span> // live output — predict.py --demo
-      </div>
+    <div class="hero-demo animate-up">
+      <div class="hero-demo-label">// live output — predict.py --demo</div>
       <p class="annotated" id="hero-annotated">
         <span class="tag per">Anderson Cooper<sup>PER</sup></span> reported live from
         <span class="tag loc">Washington D.C.<sup>LOC</sup></span> on
@@ -81,28 +471,28 @@
 <!-- ============================== INTRODUCTION ============================== -->
 <section id="introduction">
   <div class="container">
-    <div class="section-head">
+    <div class="section-head animate-up">
       <span class="section-tag">01 — introduction</span>
       <h2>Turning raw broadcast transcripts into structured facts</h2>
     </div>
 
     <div class="grid-2">
-      <div class="glass-card">
+      <div class="animate-up">
         <h3>Problem statement</h3>
-        <p>Broadcast and news text is dense with names, organisations, places and dates, but it arrives as an unstructured stream of words. Dictionary and regex-based lookups fail the moment a spelling variant, a new organisation, or an unfamiliar name appears — and they can't tell "Washington" the city from "Washington" the person. Any downstream use of the text requires reliable entity extraction.</p>
+        <p>Broadcast and news text is dense with names, organisations, places and dates, but it arrives as an unstructured stream of words. Dictionary and regex-based lookups fail the moment a spelling variant, a new organisation, or an unfamiliar name appears — and they can't tell "Washington" the city from "Washington" the person. Any downstream use of the text — indexing, search, fact-checking, analytics — first needs those entities pulled out and labelled reliably.</p>
       </div>
-      <div class="glass-card">
+      <div class="animate-up">
         <h3>Solution description</h3>
-        <p>This project fine-tunes a pretrained BERT encoder for token-level Named Entity Recognition, framed as BIO-tagged sequence labelling over four classes — <strong>PER</strong>, <strong>ORG</strong>, <strong>LOC</strong> and <strong>MISC</strong>. An optional CRF layer enforces valid tag transitions, protected by a two-phase discriminative fine-tuning strategy. Ships as a full CLI and an interactive Streamlit dashboard.</p>
+        <p>This project fine-tunes a pretrained BERT encoder for token-level Named Entity Recognition, framed as BIO-tagged sequence labelling over four entity types — <strong>PER</strong>, <strong>ORG</strong>, <strong>LOC</strong> and <strong>MISC</strong>. An optional CRF layer sits on top of the linear classifier to enforce valid tag transitions, and a two-phase discriminative fine-tuning strategy protects BERT's pretrained language knowledge while the classifier head learns. The result ships as a CLI (train / predict / evaluate) and an interactive Streamlit dashboard.</p>
       </div>
     </div>
 
-    <div class="callout" style="margin-top:2.5rem;">
+    <div class="callout animate-up" style="margin-top:2.5rem;">
       <p>The project's working title targeted a <strong>DATE</strong> category; in practice the CoNLL-2003 schema it trains on folds dates, events, nationalities and other named entities into a broader <strong>MISC</strong> class, which is what every score on this page reports against.</p>
     </div>
 
     <div class="video-grid" id="videos">
-      <div class="video-slot glass-card">
+      <div class="video-slot animate-up">
         <div class="video-frame" data-video-slot="technical">
           <div class="video-placeholder">
             <div class="play-ring"></div>
@@ -110,13 +500,13 @@
           </div>
         </div>
         <div class="video-meta">
-          <div class="kicker">Explanation</div>
+          <div class="section-tag" style="color: #06B6D4;">Explanation</div>
           <h3>Technical walkthrough</h3>
           <p>A deep dive into the BERT + CRF architecture, the BIO tag scheme, and why discriminative fine-tuning avoids catastrophic forgetting.</p>
         </div>
       </div>
 
-      <div class="video-slot glass-card">
+      <div class="video-slot animate-up">
         <div class="video-frame" data-video-slot="demo">
           <div class="video-placeholder">
             <div class="play-ring"></div>
@@ -124,7 +514,7 @@
           </div>
         </div>
         <div class="video-meta">
-          <div class="kicker">Demonstration</div>
+          <div class="section-tag" style="color: #06B6D4;">Demonstration</div>
           <h3>Live execution</h3>
           <p>Training, inference and the Streamlit dashboard running end to end — from raw sentence to colour-coded, confidence-scored entities.</p>
         </div>
@@ -136,15 +526,15 @@
 <!-- ============================== SETUP ============================== -->
 <section id="setup">
   <div class="container">
-    <div class="section-head">
+    <div class="section-head animate-up">
       <span class="section-tag">02 — setup</span>
       <h2>Setup &amp; installation</h2>
       <p>Python 3.9+, pip, and — optionally — a CUDA-capable GPU for faster training.</p>
     </div>
 
     <div class="steps">
-      <div class="step glass-card">
-        <div class="step-num">01</div>
+      <div class="step animate-up">
+        <div class="step-num">1</div>
         <div>
           <h4>Clone the repository</h4>
           <pre class="code-block"><span class="c"># </span><span class="fn">git</span> clone https://github.com/pritomsarma/Named-Entity-Recognition-System.git
@@ -152,8 +542,8 @@ cd Named-Entity-Recognition-System</pre>
         </div>
       </div>
 
-      <div class="step glass-card">
-        <div class="step-num">02</div>
+      <div class="step animate-up">
+        <div class="step-num">2</div>
         <div>
           <h4>Create a virtual environment</h4>
           <pre class="code-block"><span class="fn">python</span> -m venv .venv
@@ -164,32 +554,32 @@ source .venv/bin/activate</pre>
         </div>
       </div>
 
-      <div class="step glass-card">
-        <div class="step-num">03</div>
+      <div class="step animate-up">
+        <div class="step-num">3</div>
         <div>
           <h4>Install dependencies</h4>
           <pre class="code-block"><span class="fn">pip</span> install -r requirements.txt</pre>
-          <p style="margin-top:.6rem; font-size:.88rem; color:var(--text-dim);">Core stack: PyTorch 2.0+, 🤗 Transformers 4.30+, <code class="mono">pytorch-crf</code>, <code class="mono">seqeval</code>, and Streamlit 1.30+.</p>
+          <p style="margin-top:.6rem; font-size:.88rem; color:#9ca3af;">Core stack: PyTorch 2.0+, 🤗 Transformers 4.30+, <code class="mono">pytorch-crf</code>, <code class="mono">seqeval</code> for entity-level metrics, and Streamlit 1.30+ for the dashboard.</p>
         </div>
       </div>
 
-      <div class="step glass-card">
-        <div class="step-num">04</div>
+      <div class="step animate-up">
+        <div class="step-num">4</div>
         <div>
-          <h4>Train model</h4>
+          <h4>Train</h4>
           <pre class="code-block"><span class="c"># quick run — CoNLL-2003 subset, 4 epochs</span>
 <span class="fn">python</span> train.py
 
 <span class="c"># recommended — two-phase discriminative fine-tuning</span>
 <span class="fn">python</span> train.py --fine_tune --freeze_epochs 2 --epochs 6
 
-<span class="c"># full CoNLL-2003 (~14k examples)</span>
+<span class="c"># full CoNLL-2003 (~14k examples) — several hours on CPU</span>
 <span class="fn">python</span> train.py --full_data --epochs 10 --fine_tune</pre>
         </div>
       </div>
 
-      <div class="step glass-card">
-        <div class="step-num">05</div>
+      <div class="step animate-up">
+        <div class="step-num">5</div>
         <div>
           <h4>Predict &amp; evaluate</h4>
           <pre class="code-block"><span class="fn">python</span> predict.py --demo
@@ -198,12 +588,12 @@ source .venv/bin/activate</pre>
         </div>
       </div>
 
-      <div class="step glass-card">
-        <div class="step-num">06</div>
+      <div class="step animate-up">
+        <div class="step-num">6</div>
         <div>
           <h4>Launch the dashboard</h4>
           <pre class="code-block"><span class="fn">streamlit</span> run app.py</pre>
-          <p style="margin-top:.6rem; font-size:.88rem; color:var(--text-dim);">Paste any text and click <strong>Analyze Entities</strong> to inspect inline highlights.</p>
+          <p style="margin-top:.6rem; font-size:.88rem; color:#9ca3af;">Paste any text and click <strong>Analyze Entities</strong> to see colour-coded, confidence-scored entities highlighted inline.</p>
         </div>
       </div>
     </div>
@@ -213,23 +603,23 @@ source .venv/bin/activate</pre>
 <!-- ============================== ARCHITECTURE ============================== -->
 <section id="architecture">
   <div class="container">
-    <div class="section-head">
+    <div class="section-head animate-up">
       <span class="section-tag">03 — architecture</span>
       <h2>From raw text to labelled spans</h2>
-      <p>Every stage the input passes through, in order — tokenisation, encoding, regularisation, classification, and decoding.</p>
+      <p>Every stage the input passes through, in order — sub-word tokenisation, contextual encoding, regularisation, classification, and structured decoding.</p>
     </div>
 
     <div class="pipeline">
-      <div class="pipe-stage glass-card">
+      <div class="pipe-stage animate-up">
         <div class="pipe-num">1</div>
         <div class="pipe-body">
           <h4>Sub-word tokenisation</h4>
-          <p>The BERT WordPiece tokenizer splits raw text into sub-word tokens and IDs so out-of-vocabulary names receive sensible representations.</p>
+          <p>The BERT WordPiece tokenizer splits raw text into sub-word tokens and IDs, so out-of-vocabulary names still get sensible sub-token representations.</p>
           <div class="pipe-meta">BertTokenizerFast · max_seq_length = 128</div>
         </div>
       </div>
 
-      <div class="pipe-stage glass-card">
+      <div class="pipe-stage animate-up">
         <div class="pipe-num">2</div>
         <div class="pipe-body">
           <h4>BERT encoder</h4>
@@ -238,100 +628,93 @@ source .venv/bin/activate</pre>
         </div>
       </div>
 
-      <div class="pipe-stage glass-card">
+      <div class="pipe-stage animate-up">
         <div class="pipe-num">3</div>
         <div class="pipe-body">
-          <h4>Dropout regularisation</h4>
-          <p>A dropout mask regularises encoder outputs before classification to prevent overfitting on smaller fine-tuning splits.</p>
+          <h4>Dropout</h4>
+          <p>A dropout mask regularises the encoder output before classification — the main lever against overfitting on a small fine-tuning subset.</p>
           <div class="pipe-meta">dropout_rate = 0.3</div>
         </div>
       </div>
 
-      <div class="pipe-stage glass-card">
+      <div class="pipe-stage animate-up">
         <div class="pipe-num">4</div>
         <div class="pipe-body">
           <h4>Linear classifier</h4>
-          <p>A linear layer projects each regularized token embedding onto per-token logits across the 9 BIO tag classes.</p>
+          <p>A linear layer projects each regularised token embedding onto per-token logits over the 9 BIO tag classes.</p>
           <div class="pipe-meta">num_labels = 9 (O, B-/I- × PER, ORG, LOC, MISC)</div>
         </div>
       </div>
 
-      <div class="pipe-stage branch glass-card">
-        <div class="pipe-num">5</div>
+      <div class="pipe-stage animate-up branch" style="border-left: 4px solid #7C3AED;">
+        <div class="pipe-num" style="background:rgba(124,58,237,0.1); color:#a78bfa;">5</div>
         <div class="pipe-body">
-          <h4>CRF Decoding</h4>
-          <p>Config determines how logits map to sequences.</p>
-          <div class="pipe-branch-row">
-            <div class="pipe-branch yes"><strong>Yes →</strong> CRF (Viterbi) decoding — enforces valid transitions</div>
-            <div class="pipe-branch no"><strong>No →</strong> per-token argmax decoding</div>
+          <h4>CRF enabled?</h4>
+          <p>A config flag decides how the logits become a tag sequence.</p>
+          <div style="margin-top:1rem; display:flex; gap:1rem; flex-wrap:wrap;">
+            <div style="background:rgba(255,255,255,0.05); padding:1rem; border-radius:8px; flex:1;"><strong>Yes →</strong> CRF (Viterbi) decoding — enforces valid transitions</div>
+            <div style="background:rgba(255,255,255,0.05); padding:1rem; border-radius:8px; flex:1;"><strong>No →</strong> per-token argmax decoding</div>
           </div>
         </div>
       </div>
 
-      <div class="pipe-stage glass-card">
+      <div class="pipe-stage animate-up">
         <div class="pipe-num">6</div>
         <div class="pipe-body">
           <h4>BIO tags → entities</h4>
-          <p>Consecutive B-/I- tags of identical types are merged back into clean entity spans complete with confidence metrics.</p>
+          <p>Consecutive B-/I- tags of the same type are merged back into entity spans with text, label and confidence.</p>
         </div>
       </div>
     </div>
 
-    <h3 style="margin-top:3.5rem; margin-bottom: 1.5rem;">Codebase mapping</h3>
-    <table class="file-map glass-card">
-      <thead><tr><th>File</th><th>Purpose</th></tr></thead>
-      <tbody>
-        <tr><td>config.py</td><td>Central typed configuration dataclass (<code class="mono">NERConfig</code>)</td></tr>
-        <tr><td>train.py</td><td>Training entry point — standard or two-phase discriminative tuning</td></tr>
-        <tr><td>resume_train.py</td><td>Resume training execution from an existing saved checkpoint</td></tr>
-        <tr><td>predict.py</td><td>Inference interface supporting strings, files, or built-in demo sets</td></tr>
-        <tr><td>eval_test.py</td><td>Standalone evaluation metrics via <code class="mono">seqeval</code></td></tr>
-        <tr><td>app.py</td><td>Interactive Streamlit dashboard</td></tr>
-        <tr><td>src/data/</td><td>Dataset loading &amp; DataLoader logic (<code class="mono">ner_dataset.py</code>)</td></tr>
-        <tr><td>src/model/</td><td>Core architecture model definition (<code class="mono">BroadcastNERModel</code>)</td></tr>
-        <tr><td>src/training/</td><td>Training and validation loops (<code class="mono">NERTrainer</code>)</td></tr>
-      </tbody>
-    </table>
+    <h3 class="animate-up" style="margin-top:4rem;">Codebase mapping</h3>
+    <div class="animate-up" style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code class="mono">config.py</code></td><td>Central typed configuration — model, training, data and path settings</td></tr>
+          <tr><td><code class="mono">train.py</code></td><td>Training entry point — standard or two-phase discriminative fine-tuning</td></tr>
+          <tr><td><code class="mono">predict.py</code></td><td>Inference entry point — single string, file of sentences, or built-in demo set</td></tr>
+          <tr><td><code class="mono">eval_test.py</code></td><td>Standalone evaluation — precision / recall / F1 on the test split via seqeval</td></tr>
+          <tr><td><code class="mono">app.py</code></td><td>Streamlit dashboard for interactive, browser-based entity extraction</td></tr>
+          <tr><td><code class="mono">src/model/</code></td><td>The BroadcastNERModel architecture (BERT + classifier + CRF)</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 
 <!-- ============================== MATHEMATICS ============================== -->
 <section id="mathematics">
   <div class="container">
-    <div class="section-head">
+    <div class="section-head animate-up">
       <span class="section-tag">04 — mathematics</span>
-      <h2>The equations behind key pipeline decisions</h2>
+      <h2>The equations behind the pipeline's key decisions</h2>
     </div>
 
-    <div class="math-grid">
-      <div class="math-block glass-card">
+    <div class="grid-2">
+      <div class="math-block animate-up">
         <h4>Structured decoding — CRF sequence score</h4>
-        <p>The CRF layer scores full tag paths instead of isolated tokens, combining emission matrices with a learned transition matrix:</p>
+        <p>The CRF layer scores an entire tag path rather than each token independently, forbidding illegal jumps such as <code class="mono">O → I-PER</code>.</p>
         <div class="math-eq"><span class="katex-eq">s(x, y) = \sum_{t=1}^{T} E_{t, y_t} \; + \; \sum_{t=1}^{T-1} A_{y_t, y_{t+1}}</span></div>
-        <p>Viterbi decoding searches <span class="katex-eq">\hat{y} = \arg\max_y s(x,y)</span> to forbid illegal transitions like <code class="mono">O → I-PER</code>.</p>
       </div>
 
-      <div class="math-block glass-card">
-        <h4>Label smoothing loss</h4>
-        <p>Cross-entropy is softened to protect the classifier from overconfidence when training on smaller subsets:</p>
-        <div class="math-eq"><span class="katex-eq">\mathcal{L} = -(1-\epsilon)\log p_{y} \; - \; \frac{\epsilon}{K}\sum_{k=1}^{K} \log p_k</span></div>
-        <p>Using parameter settings <span class="katex-eq">\epsilon = 0.1</span> and <span class="katex-eq">K = 9</span> classes.</p>
+      <div class="math-block animate-up">
+        <h4>Label smoothing</h4>
+        <p>The token-level cross-entropy loss is softened so the classifier head doesn't grow overconfident on a small subset:</p>
+        <div class="math-eq"><span class="katex-eq">\mathcal{L} = -(1-\epsilon)\log p_{y} - \frac{\epsilon}{K}\sum \log p_k</span></div>
       </div>
-
-      <div class="math-block glass-card">
+      
+      <div class="math-block animate-up">
         <h4>Discriminative learning rates</h4>
-        <p>Phase 1 trains only the classifier head; Phase 2 unfreezes BERT at a lower rate to prevent catastrophic forgetting:</p>
-        <div class="math-eq">
-          <span class="katex-eq">\eta_{\text{encoder}} = \begin{cases} 0 &amp; \text{Phase 1} \\ 2\times10^{-5} &amp; \text{Phase 2} \end{cases} \quad \eta_{\text{classifier}} = 5\times10^{-4}</span>
-        </div>
+        <p>Phase 1 trains the head; Phase 2 unfreezes BERT at a lower rate — safeguarding against catastrophic forgetting.</p>
+        <div class="math-eq"><span class="katex-eq">\eta_{enc} \ll \eta_{class}</span></div>
       </div>
 
-      <div class="math-block glass-card">
-        <h4>Linear warmup &amp; decay schedule</h4>
-        <div class="math-eq">
-          <span class="katex-eq">\eta(t) = \begin{cases} \eta_{\max} \cdot \frac{t}{t_{\text{warmup}}}, &amp; t \le t_{\text{warmup}} \\ \eta_{\max} \cdot \frac{T-t}{T - t_{\text{warmup}}}, &amp; t > t_{\text{warmup}} \end{cases}</span>
-        </div>
-        <p>Ramps up over the first 10% of optimizer steps to stabilize initial head weights.</p>
+      <div class="math-block animate-up">
+        <h4>Dropout regularisation</h4>
+        <p>Applied to the 768-dim BERT output before classification to prevent overfitting.</p>
+        <div class="math-eq"><span class="katex-eq">h' = h \odot m, \quad m_i \sim \text{Bernoulli}(1-p)</span></div>
       </div>
     </div>
   </div>
@@ -340,68 +723,27 @@ source .venv/bin/activate</pre>
 <!-- ============================== CODE LOGIC ============================== -->
 <section id="code-logic">
   <div class="container">
-    <div class="section-head">
+    <div class="section-head animate-up">
       <span class="section-tag">05 — code logic</span>
-      <h2>How the pipeline is wired together</h2>
+      <h2>How the pipeline is actually wired together</h2>
     </div>
 
-    <div class="glass-card" style="margin-bottom: 2rem;">
-      <span class="file-label">config.py — a typed source of truth</span>
-      <pre class="code-block"><span class="c"># Every hyperparameter lives here as a dataclass — nothing is hard-coded.</span>
+    <div class="animate-up">
+      <span style="font-family: var(--font-mono); color: #06B6D4; display:block; margin-bottom: 0.5rem;">config.py — a single, typed source of truth</span>
+      <pre class="code-block"><span class="c"># Every hyperparameter lives here as a dataclass</span>
 NER_LABELS = [
-    <span class="s">"O"</span>,
-    <span class="s">"B-PER"</span>, <span class="s">"I-PER"</span>,
-    <span class="s">"B-ORG"</span>, <span class="s">"I-ORG"</span>,
-    <span class="s">"B-LOC"</span>, <span class="s">"I-LOC"</span>,
-    <span class="s">"B-MISC"</span>, <span class="s">"I-MISC"</span>,
+    <span class="s">"O"</span>, <span class="s">"B-PER"</span>, <span class="s">"I-PER"</span>, <span class="s">"B-ORG"</span>, <span class="s">"I-ORG"</span>, <span class="s">"B-LOC"</span>, <span class="s">"I-LOC"</span>, <span class="s">"B-MISC"</span>, <span class="s">"I-MISC"</span>,
 ]
 LABEL2ID = {label: idx <span class="k">for</span> idx, label <span class="k">in</span> enumerate(NER_LABELS)}</pre>
     </div>
 
-    <div class="glass-card" style="margin-bottom: 2rem;">
-      <span class="file-label">train.py — training strategy selection</span>
+    <div class="animate-up" style="margin-top:2rem;">
+      <span style="font-family: var(--font-mono); color: #06B6D4; display:block; margin-bottom: 0.5rem;">train.py — choosing a training strategy</span>
       <pre class="code-block"><span class="k">if</span> args.fine_tune:
+    <span class="c"># Phase 1 (frozen encoder) → Phase 2 (full model, lower encoder LR)</span>
     history = trainer.train_with_fine_tuning(freeze_epochs=args.freeze_epochs)
 <span class="k">else</span>:
-    history = trainer.train()</pre>
-    </div>
-
-    <div class="glass-card">
-      <span class="file-label">app.py — resource caching</span>
-      <pre class="code-block"><span class="k">@st</span>.cache_resource(show_spinner=<span class="s">"Initializing Model & Tokenizer..."</span>)
-<span class="k">def</span> <span class="fn">load_predictor</span>() -> BroadcastNERPredictor:
-    model = BroadcastNERModel.load_model(path_cfg.best_model_path, device=<span class="s">"cpu"</span>)
-    <span class="k">return</span> BroadcastNERPredictor(model=model, model_name=model_cfg.model_name, device=<span class="s">"cpu"</span>)</pre>
-    </div>
-  </div>
-</section>
-
-<!-- ============================== GRAPHS ============================== -->
-<section id="graphs">
-  <div class="container">
-    <div class="section-head">
-      <span class="section-tag">06 — graphs</span>
-      <h2>Training dynamics &amp; test-set breakdown</h2>
-    </div>
-
-    <div class="chart-grid">
-      <div class="chart-card glass-card chart-full">
-        <h4>Validation F1 vs. validation loss, per epoch</h4>
-        <p class="cap">Phase 1 (epochs 1–2) and Phase 2 (epochs 3–10). F1 increases past epoch 2 even as validation loss creeps up.</p>
-        <canvas id="chart-training"></canvas>
-      </div>
-
-      <div class="chart-card glass-card">
-        <h4>Per-entity test metrics</h4>
-        <p class="cap">Precision / recall / F1 on the held-out CoNLL-2003 test split.</p>
-        <canvas id="chart-entities"></canvas>
-      </div>
-
-      <div class="chart-card glass-card">
-        <h4>Test-set entity support</h4>
-        <p class="cap">Number of gold entities of each type in the test split.</p>
-        <canvas id="chart-support"></canvas>
-      </div>
+    history = trainer.train()   <span class="c"># standard single-phase training</span></pre>
     </div>
   </div>
 </section>
@@ -409,43 +751,70 @@ LABEL2ID = {label: idx <span class="k">for</span> idx, label <span class="k">in<
 <!-- ============================== PERFORMANCE ============================== -->
 <section id="performance">
   <div class="container">
-    <div class="section-head">
-      <span class="section-tag">07 — performance</span>
+    <div class="section-head animate-up">
+      <span class="section-tag">06 — performance</span>
       <h2>Benchmarks &amp; results</h2>
-      <p>Two-phase discriminative fine-tuning on the full CoNLL-2003 dataset, CPU-only execution.</p>
+      <p>Two-phase discriminative fine-tuning on the full CoNLL-2003 dataset, CPU-only, <code class="mono">bert-base-cased</code> tokenizer, CRF enabled.</p>
     </div>
 
-    <div class="stat-strip">
-      <div class="stat glass-card"><span class="num">0.9084</span><span class="lbl">Test F1 (micro avg)</span></div>
-      <div class="stat glass-card"><span class="num">0.9814</span><span class="lbl">Test token accuracy</span></div>
-      <div class="stat glass-card"><span class="num">0.9499</span><span class="lbl">Best validation F1</span></div>
-      <div class="stat glass-card"><span class="num">~4.4 hrs</span><span class="lbl">Training time (CPU)</span></div>
+    <div class="stat-strip animate-up">
+      <div class="stat"><span class="num">0.9084</span><span class="lbl">Test F1 (micro)</span></div>
+      <div class="stat"><span class="num">0.9814</span><span class="lbl">Token Accuracy</span></div>
+      <div class="stat"><span class="num">0.9499</span><span class="lbl">Val F1 (epoch 8)</span></div>
+      <div class="stat"><span class="num">~4.4h</span><span class="lbl">Training Time</span></div>
     </div>
 
-    <table class="perf glass-card" style="margin-top: 2rem;">
-      <thead><tr><th>Entity type</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
-      <tbody>
-        <tr class="tag-per"><td>PER</td><td>0.9757</td><td>0.9684</td><td>0.9720</td><td>1,616</td></tr>
-        <tr class="tag-org"><td>ORG</td><td>0.8863</td><td>0.8826</td><td>0.8845</td><td>1,661</td></tr>
-        <tr class="tag-loc"><td>LOC</td><td>0.9256</td><td>0.9322</td><td>0.9289</td><td>1,667</td></tr>
-        <tr class="tag-misc"><td>MISC</td><td>0.7952</td><td>0.8077</td><td>0.8014</td><td>702</td></tr>
-        <tr class="total"><td>micro avg</td><td>0.9035</td><td>0.9134</td><td>0.9084</td><td>5,646</td></tr>
-      </tbody>
-    </table>
+    <div class="animate-up" style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Entity type</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
+        <tbody>
+          <tr><td style="color:var(--c-per); font-weight:600;">PER</td><td>0.9757</td><td>0.9684</td><td>0.9720</td><td>1,616</td></tr>
+          <tr><td style="color:var(--c-org); font-weight:600;">ORG</td><td>0.8863</td><td>0.8826</td><td>0.8845</td><td>1,661</td></tr>
+          <tr><td style="color:var(--c-loc); font-weight:600;">LOC</td><td>0.9256</td><td>0.9322</td><td>0.9289</td><td>1,667</td></tr>
+          <tr><td style="color:var(--c-misc); font-weight:600;">MISC</td><td>0.7952</td><td>0.8077</td><td>0.8014</td><td>702</td></tr>
+          <tr class="total"><td>micro avg</td><td>0.9035</td><td>0.9134</td><td>0.9084</td><td>5,646</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
 
 <!-- ============================== ENGINEERING ============================== -->
 <section id="engineering">
   <div class="container">
-    <div class="section-head">
-      <span class="section-tag">08 — engineering</span>
+    <div class="section-head animate-up">
+      <span class="section-tag">07 — engineering</span>
       <h2>Engineering decisions behind the numbers</h2>
     </div>
 
-    <div class="glass-card" style="padding: 2.5rem;">
-      <h3>Two-phase unfreezing rationale</h3>
-      <p>Phase 1 warms up the fresh classifier head for 2 epochs. Unfreezing the encoder in Phase 2 at a 25× lower learning rate triggers an immediate performance jump as the classifier leverages properly adapted contextual features.</p>
+    <div class="eng-tabs animate-up" role="tablist">
+      <button class="eng-tab active" data-tab="finetune">Two-phase fine-tuning</button>
+      <button class="eng-tab" data-tab="overfit">Overfitting</button>
+      <button class="eng-tab" data-tab="config">Config-first</button>
+      <button class="eng-tab" data-tab="platform">Platform quirks</button>
+    </div>
+
+    <div class="eng-panel active animate-up" id="panel-finetune">
+      <h3>Why unfreezing in two phases matters</h3>
+      <p>Phase 1 (2 epochs, encoder frozen) warms up the fresh classifier head. The moment Phase 2 unfreezes the encoder — at a learning rate 25× lower than the classifier's — F1 jumps immediately to 0.918 in the very next epoch, because the classifier head now has a properly-adapted encoder underneath it instead of raw pretrained BERT features.</p>
+    </div>
+
+    <div class="eng-panel animate-up" id="panel-overfit">
+      <h3>Watching for overfitting</h3>
+      <p>Validation loss climbs steadily while validation F1 keeps inching up. That divergence is the model growing more confident on borderline predictions rather than getting them more often right — the exact pattern that <strong>label smoothing</strong>, <strong>weight decay</strong> and <strong>patience-based early stopping</strong> exist to catch before it turns into real regression.</p>
+    </div>
+
+    <div class="eng-panel animate-up" id="panel-config">
+      <h3>One dataclass tree, not scattered constants</h3>
+      <p>Configurations all bundle into a single <code class="mono">NERConfig</code>. Every script builds or loads the same config object, so a hyperparameter changed in one place can never silently drift between training and inference.</p>
+    </div>
+
+    <div class="eng-panel animate-up" id="panel-platform">
+      <h3>Small constraints that shaped the code</h3>
+      <ul style="color: var(--text-main); margin-left:1.5rem;">
+        <li><code class="mono">num_workers = 0</code> is forced on the DataLoader because Windows' multiprocessing model doesn't play well with a loaded BERT tokenizer across worker processes.</li>
+        <li>Full CoNLL-2003 training is CPU-bound in this setup.</li>
+      </ul>
     </div>
   </div>
 </section>
@@ -453,23 +822,23 @@ LABEL2ID = {label: idx <span class="k">for</span> idx, label <span class="k">in<
 <!-- ============================== TEAM ============================== -->
 <section id="team">
   <div class="container">
-    <div class="section-head">
-      <span class="section-tag">09 — team</span>
+    <div class="section-head animate-up">
+      <span class="section-tag">08 — team</span>
       <h2>Team &amp; acknowledgements</h2>
     </div>
 
     <div class="team-grid">
-      <div class="team-card glass-card">
+      <div class="team-card animate-up">
         <div class="team-role">Intern Developer</div>
         <div class="team-name">Pritom Sarma</div>
         <div class="team-org">Gauhati University</div>
       </div>
-      <div class="team-card glass-card">
+      <div class="team-card animate-up" style="transition-delay: 0.1s;">
         <div class="team-role">Faculty Advisor</div>
         <div class="team-name">Prof. Prithwijit Guha</div>
         <div class="team-org">IIT Guwahati</div>
       </div>
-      <div class="team-card glass-card">
+      <div class="team-card animate-up" style="transition-delay: 0.2s;">
         <div class="team-role">Mentors</div>
         <div class="team-name">Mohd. Amaan</div>
         <div class="team-name" style="margin-top:.4rem;">Ashwin Jacob Gigo</div>
@@ -490,555 +859,74 @@ LABEL2ID = {label: idx <span class="k">for</span> idx, label <span class="k">in<
   </div>
 </footer>
 
-<!-- Scripts -->
+<!-- Scripts for Math, Charts (retained from original), and newly added UI logic -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<!-- Retaining your external script links, though you may not need them if UI logic is handled below -->
 <script src="assets/js/main.js"></script>
 <script src="assets/js/charts.js"></script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    
+    // --- 1. Render Math Equations using KaTeX ---
+    document.querySelectorAll('.katex-eq').forEach(el => {
+      try {
+        katex.render(el.textContent, el, { throwOnError: false, displayMode: true });
+      } catch (e) {
+        console.error("KaTeX error:", e);
+      }
+    });
+
+    // --- 2. Scroll Animation Observer (Fade In/Up) ---
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.15
+    };
+
+    const observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          observer.unobserve(entry.target); // Run once
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.animate-up').forEach(el => {
+      observer.observe(el);
+    });
+
+    // --- 3. Engineering Tabs Logic ---
+    const tabs = document.querySelectorAll('.eng-tab');
+    const panels = document.querySelectorAll('.eng-panel');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active class from all tabs & panels
+        tabs.forEach(t => t.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+
+        // Add active class to clicked tab & corresponding panel
+        tab.classList.add('active');
+        const targetId = `panel-${tab.getAttribute('data-tab')}`;
+        document.getElementById(targetId).classList.add('active');
+      });
+    });
+
+    // --- 4. Sticky Nav Blur Effect ---
+    const nav = document.querySelector('.nav');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 50) {
+        nav.style.background = 'rgba(5, 5, 5, 0.85)';
+        nav.style.borderBottom = '1px solid rgba(255, 255, 255, 0.1)';
+      } else {
+        nav.style.background = 'rgba(5, 5, 5, 0.7)';
+        nav.style.borderBottom = '1px solid rgba(255, 255, 255, 0.08)';
+      }
+    });
+  });
+</script>
 </body>
 </html>
-
-:root {
-  --bg: #090a0f;
-  --bg-card: rgba(18, 20, 32, 0.7);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(99, 102, 241, 0.4);
-  --text: #f3f4f6;
-  --text-dim: #9ca3af;
-  --primary: #6366f1;
-  --primary-glow: rgba(99, 102, 241, 0.25);
-  --accent: #a855f7;
-  
-  --per-bg: rgba(59, 130, 246, 0.15);
-  --per-text: #93c5fd;
-  --org-bg: rgba(236, 72, 153, 0.15);
-  --org-text: #f472b6;
-  --loc-bg: rgba(16, 185, 129, 0.15);
-  --loc-text: #6ee7b7;
-  --misc-bg: rgba(245, 158, 11, 0.15);
-  --misc-text: #fcd34d;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-  background-color: var(--bg);
-  color: var(--text);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-body {
-  position: relative;
-  overflow-x: hidden;
-  line-height: 1.6;
-}
-
-/* Background Ambient Glows */
-.bg-glows {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: -1;
-  overflow: hidden;
-}
-
-.glow {
-  position: absolute;
-  filter: blur(140px);
-  border-radius: 50%;
-  opacity: 0.15;
-}
-
-.glow-1 {
-  top: -10%;
-  left: 20%;
-  width: 500px;
-  height: 500px;
-  background: var(--primary);
-}
-
-.glow-2 {
-  top: 40%;
-  right: -10%;
-  width: 600px;
-  height: 600px;
-  background: var(--accent);
-}
-
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-}
-
-/* Glassmorphism Cards */
-.glass-card {
-  background: var(--bg-card);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 2rem;
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.glass-card:hover {
-  border-color: var(--border-hover);
-  box-shadow: 0 10px 30px -10px var(--primary-glow);
-  transform: translateY(-2px);
-}
-
-/* Nav */
-.nav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  background: rgba(9, 10, 15, 0.8);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--border);
-  padding: 1rem 0;
-}
-
-.nav-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.wordmark {
-  font-weight: 800;
-  font-size: 1.1rem;
-  color: #fff;
-  text-decoration: none;
-  letter-spacing: -0.02em;
-}
-
-.wordmark span {
-  color: var(--primary);
-}
-
-.nav-links {
-  display: flex;
-  list-style: none;
-  gap: 1.5rem;
-}
-
-.nav-links a {
-  color: var(--text-dim);
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: color 0.2s;
-}
-
-.nav-links a:hover {
-  color: #fff;
-}
-
-.nav-cta {
-  background: linear-gradient(135deg, var(--primary), var(--accent));
-  color: #fff;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  text-decoration: none;
-  font-size: 0.85rem;
-  font-weight: 600;
-  box-shadow: 0 4px 12px var(--primary-glow);
-  transition: opacity 0.2s;
-}
-
-.nav-cta:hover {
-  opacity: 0.9;
-}
-
-/* Hero Section */
-.hero {
-  padding: 10rem 0 6rem 0;
-  text-align: center;
-}
-
-.hero-tag {
-  display: inline-block;
-  padding: 0.35rem 0.85rem;
-  background: rgba(99, 102, 241, 0.1);
-  color: #818cf8;
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: 50px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin-bottom: 1.5rem;
-}
-
-.hero h1 {
-  font-size.clamp: 2.2rem;
-  font-size: clamp(2.2rem, 5vw, 3.8rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  max-width: 900px;
-  margin: 0 auto 1.5rem auto;
-  background: linear-gradient(180deg, #fff 0%, #cbd5e1 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.lede {
-  font-size: 1.1rem;
-  color: var(--text-dim);
-  max-width: 750px;
-  margin: 0 auto 2.5rem auto;
-}
-
-.hero-actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-bottom: 3.5rem;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.btn-primary {
-  background: #fff;
-  color: #0f172a;
-}
-
-.btn-primary:hover {
-  background: #e2e8f0;
-  transform: translateY(-2px);
-}
-
-.btn-ghost {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  border: 1px solid var(--border);
-}
-
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Live Demo Box */
-.hero-demo {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 2rem;
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: left;
-  backdrop-filter: blur(10px);
-}
-
-.hero-demo-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--text-dim);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.dot-live {
-  width: 8px;
-  height: 8px;
-  background: #10b981;
-  border-radius: 50%;
-  box-shadow: 0 0 8px #10b981;
-}
-
-.annotated {
-  font-size: 1.1rem;
-  line-height: 2;
-}
-
-.tag {
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.95rem;
-  margin: 0 0.2rem;
-}
-
-.tag.per { background: var(--per-bg); color: var(--per-text); border: 1px solid rgba(59, 130, 246, 0.3); }
-.tag.org { background: var(--org-bg); color: var(--org-text); border: 1px solid rgba(236, 72, 153, 0.3); }
-.tag.loc { background: var(--loc-bg); color: var(--loc-text); border: 1px solid rgba(16, 185, 129, 0.3); }
-.tag.misc { background: var(--misc-bg); color: var(--misc-text); border: 1px solid rgba(245, 158, 11, 0.3); }
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
-  font-size: 0.8rem;
-  color: var(--text-dim);
-}
-
-.legend span {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.dot.per { background: var(--per-text); }
-.dot.org { background: var(--org-text); }
-.dot.loc { background: var(--loc-text); }
-.dot.misc { background: var(--misc-text); }
-
-/* Sections */
-section {
-  padding: 5rem 0;
-  border-top: 1px solid var(--border);
-}
-
-.section-head {
-  margin-bottom: 3rem;
-}
-
-.section-tag {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
-  color: var(--primary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-.section-head h2 {
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.grid-2 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-}
-
-/* Typography elements */
-h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-}
-
-p {
-  color: var(--text-dim);
-  font-size: 0.95rem;
-}
-
-.mono {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.9em;
-  background: rgba(255, 255, 255, 0.06);
-  padding: 0.2rem 0.4rem;
-  border-radius: 4px;
-}
-
-code {
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.code-block {
-  background: #040507;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1.25rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.85rem;
-  overflow-x: auto;
-  color: #e2e8f0;
-  margin-top: 0.75rem;
-  line-height: 1.5;
-}
-
-/* Callouts & Grids */
-.callout {
-  background: rgba(99, 102, 241, 0.05);
-  border-left: 3px solid var(--primary);
-  padding: 1.25rem;
-  border-radius: 0 12px 12px 0;
-}
-
-.video-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 3rem;
-}
-
-.video-frame {
-  aspect-ratio: 16/9;
-  background: #020408;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  margin-bottom: 1rem;
-}
-
-.video-placeholder {
-  text-align: center;
-  color: var(--text-dim);
-  font-size: 0.85rem;
-}
-
-.play-ring {
-  width: 40px;
-  height: 40px;
-  border: 2px solid var(--primary);
-  border-radius: 50%;
-  margin: 0 auto 0.5rem auto;
-}
-
-/* Pipeline styles */
-.pipeline {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.pipe-stage {
-  display: flex;
-  gap: 1.5rem;
-  align-items: flex-start;
-}
-
-.pipe-num {
-  font-family: 'JetBrains Mono', monospace;
-  background: rgba(99, 102, 241, 0.1);
-  color: var(--primary);
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-weight: 600;
-  flex-shrink: 0;
-}
-
-.pipe-meta {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--primary);
-  margin-top: 0.5rem;
-}
-
-.pipe-branch-row {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 0.5rem;
-  font-size: 0.85rem;
-}
-
-/* Stat strip */
-.stat-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.stat {
-  text-align: center;
-  padding: 1.5rem;
-}
-
-.stat .num {
-  display: block;
-  font-size: 2rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #fff, #94a3b8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 0.25rem;
-}
-
-.stat .lbl {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-/* Tables */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: 0.9rem;
-}
-
-th, td {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-
-th {
-  font-weight: 600;
-  color: var(--text-dim);
-}
-
-/* Footer */
-footer {
-  padding: 3rem 0;
-  border-top: 1px solid var(--border);
-  text-align: center;
-}
-
-.footer-inner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.footer-links {
-  display: flex;
-  gap: 1.5rem;
-}
-
-.footer-links a, .footer-note {
-  color: var(--text-dim);
-  text-decoration: none;
-  font-size: 0.85rem;
-}
-
-.footer-links a:hover {
-  color: #fff;
-}
