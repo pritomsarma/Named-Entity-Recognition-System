@@ -1,495 +1,1044 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Named Entity Recognition System</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Broadcast NER — BERT + CRF Named Entity Recognition | Internship Report</title>
+<meta name="description" content="Fine-tuning BERT with a CRF decoding layer for structured PERSON / ORGANISATION / LOCATION / MISC entity extraction from broadcast text — an IIT Guwahati internship project.">
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css?family=Fira+Code&display=swap" rel="stylesheet">
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- Bulma CSS for layout -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
-    
-    <!-- FontAwesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- KaTeX -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
 
-    <!-- KaTeX for Math -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
-
-    <!-- Prism.js for Code Highlighting -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-
-    <style>
-        :root {
-            --primary: #4a90e2;
-            --text-main: #363636;
-            --bg-gradient: linear-gradient(135deg, #fdfbfb 0%, #f3eaf2 50%, #e6f0fa 100%);
-        }
-
-        body {
-            font-family: 'Noto Sans', sans-serif;
-            color: var(--text-main);
-            background: var(--bg-gradient);
-            background-attachment: fixed;
-            line-height: 1.6;
-        }
-
-        h1, h2, h3, h4, h5, h6, .title, .subtitle {
-            font-family: 'Google Sans', sans-serif;
-        }
-
-        .hero-title {
-            font-size: 2.8rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .author-block {
-            font-size: 1.25rem;
-            text-align: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        .affiliation-block {
-            font-size: 1rem;
-            color: #666;
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .link-block a {
-            margin: 0 5px;
-            border-radius: 20px;
-            background-color: #363636;
-            color: white;
-            border: none;
-            transition: all 0.2s ease;
-        }
-
-        .link-block a:hover {
-            background-color: var(--primary);
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .icon.is-small {
-            margin-right: 0.5rem;
-        }
-
-        /* Content Containers */
-        .content-box {
-            background-color: rgba(255, 255, 255, 0.95);
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
-            padding: 3rem;
-            margin-bottom: 2.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .section-title {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 0.5rem;
-            text-align: center;
-        }
-
-        p {
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-            text-align: justify;
-        }
-
-        /* Video placeholders */
-        .video-wrapper {
-            position: relative;
-            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-            height: 0;
-            background: #e9ecef;
-            border-radius: 8px;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px dashed #b5b5b5;
-            margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .video-wrapper:hover {
-            border-color: var(--primary);
-            background: #f8f9fa;
-        }
-
-        .video-placeholder-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: #7a7a7a;
-        }
-
-        .video-placeholder-content i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: var(--primary);
-        }
-
-        /* CSS Architecture Diagram */
-        .arch-diagram {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            margin: 3rem 0;
-            padding: 2rem;
-            background: rgba(245, 247, 250, 0.8);
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .arch-node {
-            background: white;
-            border: 2px solid var(--primary);
-            padding: 1.2rem 1.5rem;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 500;
-            min-width: 150px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            transition: transform 0.2s;
-        }
-
-        .arch-node:hover {
-            transform: scale(1.05);
-            background: #f0f7ff;
-        }
-
-        .arch-node i {
-            display: block;
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            color: var(--primary);
-        }
-
-        .arch-arrow {
-            color: #a0aec0;
-            font-size: 1.5rem;
-        }
-
-        .highlight-node {
-            background: var(--primary);
-            color: white;
-            border-color: #3174c6;
-        }
-        
-        .highlight-node i {
-            color: white;
-        }
-
-        /* Math & Code Blocks */
-        .math-block {
-            background: #fdfdfd;
-            padding: 1.5rem;
-            border-radius: 8px;
-            border-left: 4px solid var(--primary);
-            margin-bottom: 1.5rem;
-            overflow-x: auto;
-        }
-
-        pre[class*="language-"] {
-            border-radius: 8px !important;
-            margin-bottom: 2rem !important;
-            font-family: 'Fira Code', monospace !important;
-            font-size: 0.95rem;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
-        }
-
-        /* Mentorship Section */
-        .mentorship-box {
-            text-align: center;
-            background: linear-gradient(to right, #f8f9fa, #ffffff, #f8f9fa);
-            border-top: 4px solid var(--primary);
-        }
-        
-        .mentor-title {
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #7a7a7a;
-            margin-bottom: 0.5rem;
-        }
-        
-        .mentor-name {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #363636;
-            margin-bottom: 1.5rem;
-        }
-
-        @media (max-width: 768px) {
-            .arch-diagram {
-                flex-direction: column;
-            }
-            .arch-arrow {
-                transform: rotate(90deg);
-            }
-            .content-box {
-                padding: 1.5rem;
-            }
-        }
-    </style>
+<!-- Custom Stylesheet -->
+<link rel="stylesheet" href="assets/css/style.css">
 </head>
-<body>
+<body id="top">
 
-    <section class="section">
-        <div class="container is-max-desktop">
-            <div class="content-box" style="background: transparent; box-shadow: none; border: none; padding-bottom: 0;">
-                <h1 class="hero-title">Named Entity Recognition System</h1>
-                
-                <div class="is-flex is-justify-content-center is-flex-wrap-wrap mb-4">
-                    <div class="author-block mx-3">
-                        <strong>Pritom Sarma</strong>
-                    </div>
-                </div>
-                
-                <div class="affiliation-block">
-                    <span>Internship Project Report</span>
-                </div>
+<!-- Ambient Background Glows -->
+<div class="bg-glows">
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+</div>
 
-                <div class="column has-text-centered link-block">
-                    <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System" target="_blank" class="button is-rounded is-dark">
-                        <span class="icon is-small">
-                            <i class="fab fa-github"></i>
-                        </span>
-                        <span>Code</span>
-                    </a>
-                    <a href="#workflow-video" class="button is-rounded is-dark">
-                        <span class="icon is-small">
-                            <i class="fas fa-network-wired"></i>
-                        </span>
-                        <span>Workflow Video</span>
-                    </a>
-                    <a href="#demo-video" class="button is-rounded is-dark">
-                        <span class="icon is-small">
-                            <i class="fas fa-play-circle"></i>
-                        </span>
-                        <span>Demo Video</span>
-                    </a>
-                </div>
-            </div>
+<!-- ============================== NAV ============================== -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="wordmark" href="#top">broadcast<span>.ner</span></a>
+    <ul class="nav-links">
+      <li><a href="#introduction">Intro</a></li>
+      <li><a href="#setup">Setup</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#mathematics">Math</a></li>
+      <li><a href="#code-logic">Code</a></li>
+      <li><a href="#graphs">Graphs</a></li>
+      <li><a href="#performance">Performance</a></li>
+      <li><a href="#engineering">Engineering</a></li>
+      <li><a href="#team">Team</a></li>
+    </ul>
+    <a class="nav-cta" href="https://github.com/pritomsarma/Named-Entity-Recognition-System" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</nav>
 
-            <div class="content-box">
-                <h2 class="section-title">Abstract</h2>
-                <div class="content">
-                    <p>
-                        Named Entity Recognition (NER) is a core subtask of Information Extraction in Natural Language Processing (NLP) that aims to locate and classify named entities mentioned in unstructured text into pre-defined categories such as person names, organizations, locations, medical codes, time expressions, quantities, monetary values, and percentages.
-                    </p>
-                    <p>
-                        This project focuses on building a highly robust and scalable NER pipeline leveraging state-of-the-art Deep Learning architectures. By capturing both deep contextual semantic meanings through embeddings and sequence modeling, coupled with a Conditional Random Field (CRF) layer, the model accurately respects sequential tag dependencies (e.g., ensuring an <code>I-ORG</code> tag strictly follows a <code>B-ORG</code> tag). This hybrid approach guarantees highly accurate entity tagging across complex, ambiguous domains.
-                    </p>
-                </div>
-            </div>
+<!-- ============================== HERO ============================== -->
+<header class="hero">
+  <div class="container">
+    <div class="hero-badge-wrapper">
+      <span class="hero-tag">IIT Guwahati Internship Project</span>
+    </div>
+    <h1>A BERT + CRF engine for structured entity extraction from broadcast text</h1>
+    <p class="lede">Fine-tuning <code class="mono">bert-base-uncased</code> on CoNLL-2003 with BIO tagging, a CRF decoding head, and two-phase discriminative fine-tuning — evaluated with precision, recall and F1.</p>
 
-            <div class="content-box" id="videos">
-                <h2 class="section-title">Project Demonstrations</h2>
-                <p class="has-text-centered mb-5">The following presentations outline the underlying workflow architecture and a live operational demonstration of the NER system.</p>
-                
-                <h3 class="title is-4 mt-5" id="workflow-video">Workflow Video</h3>
-                <div class="video-wrapper">
-                    <!-- Replace this content with your iframe when ready -->
-                    <div class="video-placeholder-content">
-                        <i class="fas fa-project-diagram"></i>
-                        <p class="title is-5">Workflow Video Placeholder</p>
-                        <p class="subtitle is-6">Embed your presentation/workflow video here</p>
-                    </div>
-                </div>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#videos">Watch walkthroughs</a>
+      <a class="btn btn-ghost" href="https://github.com/pritomsarma/Named-Entity-Recognition-System" target="_blank" rel="noopener">View source code</a>
+    </div>
 
-                <h3 class="title is-4 mt-6" id="demo-video">Demonstration Video</h3>
-                <div class="video-wrapper">
-                    <!-- Replace this content with your iframe when ready -->
-                    <div class="video-placeholder-content">
-                        <i class="fas fa-laptop-code"></i>
-                        <p class="title is-5">Demonstration Video Placeholder</p>
-                        <p class="subtitle is-6">Embed your live demo video here</p>
-                    </div>
-                </div>
-            </div>
+    <div class="hero-demo">
+      <div class="hero-demo-label">
+        <span class="dot-live"></span> // live output — predict.py --demo
+      </div>
+      <p class="annotated" id="hero-annotated">
+        <span class="tag per">Anderson Cooper<sup>PER</sup></span> reported live from
+        <span class="tag loc">Washington D.C.<sup>LOC</sup></span> on
+        <span class="tag org">CNN<sup>ORG</sup></span> on
+        <span class="tag misc">January 15th<sup>MISC</sup></span> about the latest policy changes.
+      </p>
+      <div class="legend">
+        <span><i class="dot per"></i>PER — person</span>
+        <span><i class="dot org"></i>ORG — organisation</span>
+        <span><i class="dot loc"></i>LOC — location</span>
+        <span><i class="dot misc"></i>MISC — dates, events, nationalities</span>
+      </div>
+    </div>
+  </div>
+</header>
 
-            <div class="content-box">
-                <h2 class="section-title">Architecture & Workflow</h2>
-                <div class="content">
-                    <p>
-                        The system utilizes a pipeline that converts raw unstructured text into structured BIO (Begin, Inside, Outside) tags. The tokens are initially passed through an embedding layer (e.g., Word2Vec, GloVe, or BERT embeddings), encoded using a Bi-directional Long Short-Term Memory (BiLSTM) network to capture past and future context, and finally decoded using a CRF layer to model the sequence constraints.
-                    </p>
-                </div>
-                
-                <!-- CSS Based Architecture Diagram -->
-                <div class="arch-diagram">
-                    <div class="arch-node">
-                        <i class="fas fa-font"></i>
-                        Input Text
-                    </div>
-                    <i class="fas fa-arrow-right arch-arrow"></i>
-                    
-                    <div class="arch-node">
-                        <i class="fas fa-cut"></i>
-                        Tokenization & Embeddings
-                    </div>
-                    <i class="fas fa-arrow-right arch-arrow"></i>
-                    
-                    <div class="arch-node highlight-node">
-                        <i class="fas fa-project-diagram"></i>
-                        BiLSTM Encoder
-                    </div>
-                    <i class="fas fa-arrow-right arch-arrow"></i>
-                    
-                    <div class="arch-node highlight-node">
-                        <i class="fas fa-layer-group"></i>
-                        CRF Layer
-                    </div>
-                    <i class="fas fa-arrow-right arch-arrow"></i>
-                    
-                    <div class="arch-node">
-                        <i class="fas fa-tags"></i>
-                        Entity Tags Output
-                    </div>
-                </div>
-            </div>
+<!-- ============================== INTRODUCTION ============================== -->
+<section id="introduction">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-tag">01 — introduction</span>
+      <h2>Turning raw broadcast transcripts into structured facts</h2>
+    </div>
 
-            <div class="content-box">
-                <h2 class="section-title">Mathematical Formulation</h2>
-                <div class="content">
-                    <p>
-                        The integration of a Conditional Random Field (CRF) on top of the BiLSTM outputs is essential for sequence labeling tasks. Instead of decoding independently, the CRF layer models the transition probabilities between tags. 
-                    </p>
-                    
-                    <div class="math-block">
-                        <strong>1. Emission and Transition Score:</strong><br>
-                        For a sequence of words $X = \{x_1, ..., x_n\}$ and a sequence of predicted tags $y = \{y_1, ..., y_n\}$, we define the score of the sequence as the sum of emission scores from the BiLSTM network and the transition scores from the CRF matrix:
-                        $$ s(X, y) = \sum_{i=1}^n P_{i, y_i} + \sum_{i=0}^n A_{y_i, y_{i+1}} $$
-                        <span class="is-size-7 has-text-grey">Where $P_{i, y_i}$ is the emission score of tag $y_i$ for word $x_i$, and $A_{y_i, y_{i+1}}$ is the transition score from tag $y_i$ to $y_{i+1}$.</span>
-                    </div>
+    <div class="grid-2">
+      <div class="glass-card">
+        <h3>Problem statement</h3>
+        <p>Broadcast and news text is dense with names, organisations, places and dates, but it arrives as an unstructured stream of words. Dictionary and regex-based lookups fail the moment a spelling variant, a new organisation, or an unfamiliar name appears — and they can't tell "Washington" the city from "Washington" the person. Any downstream use of the text requires reliable entity extraction.</p>
+      </div>
+      <div class="glass-card">
+        <h3>Solution description</h3>
+        <p>This project fine-tunes a pretrained BERT encoder for token-level Named Entity Recognition, framed as BIO-tagged sequence labelling over four classes — <strong>PER</strong>, <strong>ORG</strong>, <strong>LOC</strong> and <strong>MISC</strong>. An optional CRF layer enforces valid tag transitions, protected by a two-phase discriminative fine-tuning strategy. Ships as a full CLI and an interactive Streamlit dashboard.</p>
+      </div>
+    </div>
 
-                    <div class="math-block">
-                        <strong>2. Sequence Probability:</strong><br>
-                        The score is then transformed into a probability distribution over all possible tag sequences $Y_X$ using a softmax function over the sequence space:
-                        $$ p(y|X) = \frac{e^{s(X, y)}}{\sum_{\tilde{y} \in Y_X} e^{s(X, \tilde{y})}} $$
-                    </div>
+    <div class="callout" style="margin-top:2.5rem;">
+      <p>The project's working title targeted a <strong>DATE</strong> category; in practice the CoNLL-2003 schema it trains on folds dates, events, nationalities and other named entities into a broader <strong>MISC</strong> class, which is what every score on this page reports against.</p>
+    </div>
 
-                    <div class="math-block">
-                        <strong>3. Log-Likelihood Loss:</strong><br>
-                        During training, we minimize the negative log-likelihood of the correct tag sequence:
-                        $$ \mathcal{L} = - \log(p(y|X)) = \log \left( \sum_{\tilde{y} \in Y_X} e^{s(X, \tilde{y})} \right) - s(X, y) $$
-                    </div>
-                </div>
-            </div>
-
-            <div class="content-box">
-                <h2 class="section-title">Critical Code Implementations</h2>
-                <div class="content">
-                    <p>
-                        Below is a representative PyTorch implementation snippet defining the core neural network architecture for the NER task, specifically mapping the sequential hidden states into the required classification space before CRF processing.
-                    </p>
-                </div>
-
-<pre><code class="language-python">import torch
-import torch.nn as nn
-
-class BiLSTM_CRF_NER(nn.Module):
-    def __init__(self, vocab_size, tagset_size, embedding_dim, hidden_dim):
-        super(BiLSTM_CRF_NER, self).__init__()
-        self.embedding_dim = embedding_dim
-        self.hidden_dim = hidden_dim
-        self.vocab_size = vocab_size
-        self.tagset_size = tagset_size
-
-        # 1. Embedding Layer
-        self.word_embeds = nn.Embedding(vocab_size, embedding_dim)
-        
-        # 2. BiLSTM Encoder
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim // 2,
-                            num_layers=1, bidirectional=True, batch_first=True)
-        
-        # 3. Linear Layer mapping to tag space
-        self.hidden2tag = nn.Linear(hidden_dim, tagset_size)
-        
-        # 4. (Implementation of CRF layer usually follows here)
-
-    def _get_lstm_features(self, sentence):
-        """Pass input through Embeddings and BiLSTM"""
-        embeds = self.word_embeds(sentence)
-        # Sequence encoding
-        lstm_out, _ = self.lstm(embeds)
-        # Emission scores mapping
-        lstm_feats = self.hidden2tag(lstm_out)
-        return lstm_feats
-
-    def forward(self, sentence):
-        """Forward pass predicting the best tag sequence"""
-        # Get emission scores from BiLSTM
-        lstm_feats = self._get_lstm_features(sentence)
-        
-        # Decoded using Viterbi Algorithm (Assuming CRF module is applied)
-        # score, tag_seq = self.crf_layer.decode(lstm_feats)
-        # return score, tag_seq
-        return lstm_feats
-</code></pre>
-            </div>
-
-            <div class="content-box mentorship-box">
-                <h2 class="section-title" style="border:none; margin-bottom: 2rem;">Mentorship & Acknowledgements</h2>
-                
-                <div class="columns is-multiline is-centered">
-                    <div class="column is-5">
-                        <div class="mentor-title">Assigned Mentors</div>
-                        <div class="mentor-name">Aswini Jacob Gigi</div>
-                        <div class="mentor-name">Amaan Irfan</div>
-                    </div>
-                    
-                    <div class="column is-5">
-                        <div class="mentor-title">Faculty Advisor</div>
-                        <div class="mentor-name">Prof. Prithwijit Guha</div>
-                    </div>
-                </div>
-            </div>
-
+    <div class="video-grid" id="videos">
+      <div class="video-slot glass-card">
+        <div class="video-frame" data-video-slot="technical">
+          <div class="video-placeholder">
+            <div class="play-ring"></div>
+            <span>Paste your video link in <code>assets/js/main.js</code></span>
+          </div>
         </div>
-    </section>
-
-    <footer class="footer" style="background: transparent; padding-top: 0;">
-        <div class="content has-text-centered">
-            <p>
-                <strong>NER System Project Page</strong> based on academic templates. <br>
-                Rendered with KaTeX and Prism.js.
-            </p>
+        <div class="video-meta">
+          <div class="kicker">Explanation</div>
+          <h3>Technical walkthrough</h3>
+          <p>A deep dive into the BERT + CRF architecture, the BIO tag scheme, and why discriminative fine-tuning avoids catastrophic forgetting.</p>
         </div>
-    </footer>
+      </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize KaTeX for Math equations
-            renderMathInElement(document.body, {
-                delimiters: [
-                    {left: '$$', right: '$$', display: true},
-                    {left: '$', right: '$', display: false}
-                ],
-                throwOnError: false
-            });
-        });
-    </script>
+      <div class="video-slot glass-card">
+        <div class="video-frame" data-video-slot="demo">
+          <div class="video-placeholder">
+            <div class="play-ring"></div>
+            <span>Paste your video link in <code>assets/js/main.js</code></span>
+          </div>
+        </div>
+        <div class="video-meta">
+          <div class="kicker">Demonstration</div>
+          <h3>Live execution</h3>
+          <p>Training, inference and the Streamlit dashboard running end to end — from raw sentence to colour-coded, confidence-scored entities.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SETUP ============================== -->
+<section id="setup">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-tag">02 — setup</span>
+      <h2>Setup &amp; installation</h2>
+      <p>Python 3.9+, pip, and — optionally — a CUDA-capable GPU for faster training.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step glass-card">
+        <div class="step-num">01</div>
+        <div>
+          <h4>Clone the repository</h4>
+          <pre class="code-block"><span class="c"># </span><span class="fn">git</span> clone https://github.com/pritomsarma/Named-Entity-Recognition-System.git
+cd Named-Entity-Recognition-System</pre>
+        </div>
+      </div>
+
+      <div class="step glass-card">
+        <div class="step-num">02</div>
+        <div>
+          <h4>Create a virtual environment</h4>
+          <pre class="code-block"><span class="fn">python</span> -m venv .venv
+<span class="c"># Windows</span>
+.venv\Scripts\activate
+<span class="c"># macOS / Linux</span>
+source .venv/bin/activate</pre>
+        </div>
+      </div>
+
+      <div class="step glass-card">
+        <div class="step-num">03</div>
+        <div>
+          <h4>Install dependencies</h4>
+          <pre class="code-block"><span class="fn">pip</span> install -r requirements.txt</pre>
+          <p style="margin-top:.6rem; font-size:.88rem; color:var(--text-dim);">Core stack: PyTorch 2.0+, 🤗 Transformers 4.30+, <code class="mono">pytorch-crf</code>, <code class="mono">seqeval</code>, and Streamlit 1.30+.</p>
+        </div>
+      </div>
+
+      <div class="step glass-card">
+        <div class="step-num">04</div>
+        <div>
+          <h4>Train model</h4>
+          <pre class="code-block"><span class="c"># quick run — CoNLL-2003 subset, 4 epochs</span>
+<span class="fn">python</span> train.py
+
+<span class="c"># recommended — two-phase discriminative fine-tuning</span>
+<span class="fn">python</span> train.py --fine_tune --freeze_epochs 2 --epochs 6
+
+<span class="c"># full CoNLL-2003 (~14k examples)</span>
+<span class="fn">python</span> train.py --full_data --epochs 10 --fine_tune</pre>
+        </div>
+      </div>
+
+      <div class="step glass-card">
+        <div class="step-num">05</div>
+        <div>
+          <h4>Predict &amp; evaluate</h4>
+          <pre class="code-block"><span class="fn">python</span> predict.py --demo
+<span class="fn">python</span> predict.py --model_path checkpoints/best_model.pt --text <span class="s">"Anderson Cooper reported from New York on CNN."</span>
+<span class="fn">python</span> eval_test.py   <span class="c"># precision / recall / F1 via seqeval</span></pre>
+        </div>
+      </div>
+
+      <div class="step glass-card">
+        <div class="step-num">06</div>
+        <div>
+          <h4>Launch the dashboard</h4>
+          <pre class="code-block"><span class="fn">streamlit</span> run app.py</pre>
+          <p style="margin-top:.6rem; font-size:.88rem; color:var(--text-dim);">Paste any text and click <strong>Analyze Entities</strong> to inspect inline highlights.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ARCHITECTURE ============================== -->
+<section id="architecture">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-tag">03 — architecture</span>
+      <h2>From raw text to labelled spans</h2>
+      <p>Every stage the input passes through, in order — tokenisation, encoding, regularisation, classification, and decoding.</p>
+    </div>
+
+    <div class="pipeline">
+      <div class="pipe-stage glass-card">
+        <div class="pipe-num">1</div>
+        <div class="pipe-body">
+          <h4>Sub-word tokenisation</h4>
+          <p>The BERT WordPiece tokenizer splits raw text into sub-word tokens and IDs so out-of-vocabulary names receive sensible representations.</p>
+          <div class="pipe-meta">BertTokenizerFast · max_seq_length = 128</div>
+        </div>
+      </div>
+
+      <div class="pipe-stage glass-card">
+        <div class="pipe-num">2</div>
+        <div class="pipe-body">
+          <h4>BERT encoder</h4>
+          <p>Token IDs pass through <code class="mono">bert-base-uncased</code>, producing a 768-dimensional contextual embedding per token.</p>
+          <div class="pipe-meta">hidden_size = 768</div>
+        </div>
+      </div>
+
+      <div class="pipe-stage glass-card">
+        <div class="pipe-num">3</div>
+        <div class="pipe-body">
+          <h4>Dropout regularisation</h4>
+          <p>A dropout mask regularises encoder outputs before classification to prevent overfitting on smaller fine-tuning splits.</p>
+          <div class="pipe-meta">dropout_rate = 0.3</div>
+        </div>
+      </div>
+
+      <div class="pipe-stage glass-card">
+        <div class="pipe-num">4</div>
+        <div class="pipe-body">
+          <h4>Linear classifier</h4>
+          <p>A linear layer projects each regularized token embedding onto per-token logits across the 9 BIO tag classes.</p>
+          <div class="pipe-meta">num_labels = 9 (O, B-/I- × PER, ORG, LOC, MISC)</div>
+        </div>
+      </div>
+
+      <div class="pipe-stage branch glass-card">
+        <div class="pipe-num">5</div>
+        <div class="pipe-body">
+          <h4>CRF Decoding</h4>
+          <p>Config determines how logits map to sequences.</p>
+          <div class="pipe-branch-row">
+            <div class="pipe-branch yes"><strong>Yes →</strong> CRF (Viterbi) decoding — enforces valid transitions</div>
+            <div class="pipe-branch no"><strong>No →</strong> per-token argmax decoding</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-stage glass-card">
+        <div class="pipe-num">6</div>
+        <div class="pipe-body">
+          <h4>BIO tags → entities</h4>
+          <p>Consecutive B-/I- tags of identical types are merged back into clean entity spans complete with confidence metrics.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:3.5rem; margin-bottom: 1.5rem;">Codebase mapping</h3>
+    <table class="file-map glass-card">
+      <thead><tr><th>File</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td>config.py</td><td>Central typed configuration dataclass (<code class="mono">NERConfig</code>)</td></tr>
+        <tr><td>train.py</td><td>Training entry point — standard or two-phase discriminative tuning</td></tr>
+        <tr><td>resume_train.py</td><td>Resume training execution from an existing saved checkpoint</td></tr>
+        <tr><td>predict.py</td><td>Inference interface supporting strings, files, or built-in demo sets</td></tr>
+        <tr><td>eval_test.py</td><td>Standalone evaluation metrics via <code class="mono">seqeval</code></td></tr>
+        <tr><td>app.py</td><td>Interactive Streamlit dashboard</td></tr>
+        <tr><td>src/data/</td><td>Dataset loading &amp; DataLoader logic (<code class="mono">ner_dataset.py</code>)</td></tr>
+        <tr><td>src/model/</td><td>Core architecture model definition (<code class="mono">BroadcastNERModel</code>)</td></tr>
+        <tr><td>src/training/</td><td>Training and validation loops (<code class="mono">NERTrainer</code>)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== MATHEMATICS ============================== -->
+<section id="mathematics">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-tag">04 — mathematics</span>
+      <h2>The equations behind key pipeline decisions</h2>
+    </div>
+
+    <div class="math-grid">
+      <div class="math-block glass-card">
+        <h4>Structured decoding — CRF sequence score</h4>
+        <p>The CRF layer scores full tag paths instead of isolated tokens, combining emission matrices with a learned transition matrix:</p>
+        <div class="math-eq"><span class="katex-eq">s(x, y) = \sum_{t=1}^{T} E_{t, y_t} \; + \; \sum_{t=1}^{T-1} A_{y_t, y_{t+1}}</span></div>
+        <p>Viterbi decoding searches <span class="katex-eq">\hat{y} = \arg\max_y s(x,y)</span> to forbid illegal transitions like <code class="mono">O → I-PER</code>.</p>
+      </div>
+
+      <div class="math-block glass-card">
+        <h4>Label smoothing loss</h4>
+        <p>Cross-entropy is softened to protect the classifier from overconfidence when training on smaller subsets:</p>
+        <div class="math-eq"><span class="katex-eq">\mathcal{L} = -(1-\epsilon)\log p_{y} \; - \; \frac{\epsilon}{K}\sum_{k=1}^{K} \log p_k</span></div>
+        <p>Using parameter settings <span class="katex-eq">\epsilon = 0.1</span> and <span class="katex-eq">K = 9</span> classes.</p>
+      </div>
+
+      <div class="math-block glass-card">
+        <h4>Discriminative learning rates</h4>
+        <p>Phase 1 trains only the classifier head; Phase 2 unfreezes BERT at a lower rate to prevent catastrophic forgetting:</p>
+        <div class="math-eq">
+          <span class="katex-eq">\eta_{\text{encoder}} = \begin{cases} 0 &amp; \text{Phase 1} \\ 2\times10^{-5} &amp; \text{Phase 2} \end{cases} \quad \eta_{\text{classifier}} = 5\times10^{-4}</span>
+        </div>
+      </div>
+
+      <div class="math-block glass-card">
+        <h4>Linear warmup &amp; decay schedule</h4>
+        <div class="math-eq">
+          <span class="katex-eq">\eta(t) = \begin{cases} \eta_{\max} \cdot \frac{t}{t_{\text{warmup}}}, &amp; t \le t_{\text{warmup}} \\ \eta_{\max} \cdot \frac{T-t}{T - t_{\text{warmup}}}, &amp; t > t_{\text{warmup}} \end{cases}</span>
+        </div>
+        <p>Ramps up over the first 10% of optimizer steps to stabilize initial head weights.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== CODE LOGIC ============================== -->
+<section id="code-logic">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-tag">05 — code logic</span>
+      <h2>How the pipeline is wired together</h2>
+    </div>
+
+    <div class="glass-card" style="margin-bottom: 2rem;">
+      <span class="file-label">config.py — a typed source of truth</span>
+      <pre class="code-block"><span class="c"># Every hyperparameter lives here as a dataclass — nothing is hard-coded.</span>
+NER_LABELS = [
+    <span class="s">"O"</span>,
+    <span class="s">"B-PER"</span>, <span class="s">"I-PER"</span>,
+    <span class="s">"B-ORG"</span>, <span class="s">"I-ORG"</span>,
+    <span class="s">"B-LOC"</span>, <span class="s">"I-LOC"</span>,
+    <span class="s">"B-MISC"</span>, <span class="s">"I-MISC"</span>,
+]
+LABEL2ID = {label: idx <span class="k">for</span> idx, label <span class="k">in</span> enumerate(NER_LABELS)}</pre>
+    </div>
+
+    <div class="glass-card" style="margin-bottom: 2rem;">
+      <span class="file-label">train.py — training strategy selection</span>
+      <pre class="code-block"><span class="k">if</span> args.fine_tune:
+    history = trainer.train_with_fine_tuning(freeze_epochs=args.freeze_epochs)
+<span class="k">else</span>:
+    history = trainer.train()</pre>
+    </div>
+
+    <div class="glass-card">
+      <span class="file-label">app.py — resource caching</span>
+      <pre class="code-block"><span class="k">@st</span>.cache_resource(show_spinner=<span class="s">"Initializing Model & Tokenizer..."</span>)
+<span class="k">def</span> <span class="fn">load_predictor</span>() -> BroadcastNERPredictor:
+    model = BroadcastNERModel.load_model(path_cfg.best_model_path, device=<span class="s">"cpu"</span>)
+    <span class="k">return</span> BroadcastNERPredictor(model=model, model_name=model_cfg.model_name, device=<span class="s">"cpu"</span>)</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== GRAPHS ============================== -->
+<section id="graphs">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-tag">06 — graphs</span>
+      <h2>Training dynamics &amp; test-set breakdown</h2>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card glass-card chart-full">
+        <h4>Validation F1 vs. validation loss, per epoch</h4>
+        <p class="cap">Phase 1 (epochs 1–2) and Phase 2 (epochs 3–10). F1 increases past epoch 2 even as validation loss creeps up.</p>
+        <canvas id="chart-training"></canvas>
+      </div>
+
+      <div class="chart-card glass-card">
+        <h4>Per-entity test metrics</h4>
+        <p class="cap">Precision / recall / F1 on the held-out CoNLL-2003 test split.</p>
+        <canvas id="chart-entities"></canvas>
+      </div>
+
+      <div class="chart-card glass-card">
+        <h4>Test-set entity support</h4>
+        <p class="cap">Number of gold entities of each type in the test split.</p>
+        <canvas id="chart-support"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== PERFORMANCE ============================== -->
+<section id="performance">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-tag">07 — performance</span>
+      <h2>Benchmarks &amp; results</h2>
+      <p>Two-phase discriminative fine-tuning on the full CoNLL-2003 dataset, CPU-only execution.</p>
+    </div>
+
+    <div class="stat-strip">
+      <div class="stat glass-card"><span class="num">0.9084</span><span class="lbl">Test F1 (micro avg)</span></div>
+      <div class="stat glass-card"><span class="num">0.9814</span><span class="lbl">Test token accuracy</span></div>
+      <div class="stat glass-card"><span class="num">0.9499</span><span class="lbl">Best validation F1</span></div>
+      <div class="stat glass-card"><span class="num">~4.4 hrs</span><span class="lbl">Training time (CPU)</span></div>
+    </div>
+
+    <table class="perf glass-card" style="margin-top: 2rem;">
+      <thead><tr><th>Entity type</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
+      <tbody>
+        <tr class="tag-per"><td>PER</td><td>0.9757</td><td>0.9684</td><td>0.9720</td><td>1,616</td></tr>
+        <tr class="tag-org"><td>ORG</td><td>0.8863</td><td>0.8826</td><td>0.8845</td><td>1,661</td></tr>
+        <tr class="tag-loc"><td>LOC</td><td>0.9256</td><td>0.9322</td><td>0.9289</td><td>1,667</td></tr>
+        <tr class="tag-misc"><td>MISC</td><td>0.7952</td><td>0.8077</td><td>0.8014</td><td>702</td></tr>
+        <tr class="total"><td>micro avg</td><td>0.9035</td><td>0.9134</td><td>0.9084</td><td>5,646</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================== ENGINEERING ============================== -->
+<section id="engineering">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-tag">08 — engineering</span>
+      <h2>Engineering decisions behind the numbers</h2>
+    </div>
+
+    <div class="glass-card" style="padding: 2.5rem;">
+      <h3>Two-phase unfreezing rationale</h3>
+      <p>Phase 1 warms up the fresh classifier head for 2 epochs. Unfreezing the encoder in Phase 2 at a 25× lower learning rate triggers an immediate performance jump as the classifier leverages properly adapted contextual features.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== TEAM ============================== -->
+<section id="team">
+  <div class="container">
+    <div class="section-head">
+      <span class="section-tag">09 — team</span>
+      <h2>Team &amp; acknowledgements</h2>
+    </div>
+
+    <div class="team-grid">
+      <div class="team-card glass-card">
+        <div class="team-role">Intern Developer</div>
+        <div class="team-name">Pritom Sarma</div>
+        <div class="team-org">Gauhati University</div>
+      </div>
+      <div class="team-card glass-card">
+        <div class="team-role">Faculty Advisor</div>
+        <div class="team-name">Prof. Prithwijit Guha</div>
+        <div class="team-org">IIT Guwahati</div>
+      </div>
+      <div class="team-card glass-card">
+        <div class="team-role">Mentors</div>
+        <div class="team-name">Mohd. Amaan</div>
+        <div class="team-name" style="margin-top:.4rem;">Ashwin Jacob Gigo</div>
+        <div class="team-org">IIT Guwahati</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== FOOTER ============================== -->
+<footer>
+  <div class="container footer-inner">
+    <div class="footer-links">
+      <a href="https://github.com/pritomsarma/Named-Entity-Recognition-System" target="_blank" rel="noopener">GitHub Repository</a>
+      <a href="#top">Back to top</a>
+    </div>
+    <div class="footer-note">© 2026 Broadcast NER Project. Internship evaluation submission.</div>
+  </div>
+</footer>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="assets/js/main.js"></script>
+<script src="assets/js/charts.js"></script>
 </body>
 </html>
 
+:root {
+  --bg: #090a0f;
+  --bg-card: rgba(18, 20, 32, 0.7);
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(99, 102, 241, 0.4);
+  --text: #f3f4f6;
+  --text-dim: #9ca3af;
+  --primary: #6366f1;
+  --primary-glow: rgba(99, 102, 241, 0.25);
+  --accent: #a855f7;
+  
+  --per-bg: rgba(59, 130, 246, 0.15);
+  --per-text: #93c5fd;
+  --org-bg: rgba(236, 72, 153, 0.15);
+  --org-text: #f472b6;
+  --loc-bg: rgba(16, 185, 129, 0.15);
+  --loc-text: #6ee7b7;
+  --misc-bg: rgba(245, 158, 11, 0.15);
+  --misc-text: #fcd34d;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+  position: relative;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Background Ambient Glows */
+.bg-glows {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.glow {
+  position: absolute;
+  filter: blur(140px);
+  border-radius: 50%;
+  opacity: 0.15;
+}
+
+.glow-1 {
+  top: -10%;
+  left: 20%;
+  width: 500px;
+  height: 500px;
+  background: var(--primary);
+}
+
+.glow-2 {
+  top: 40%;
+  right: -10%;
+  width: 600px;
+  height: 600px;
+  background: var(--accent);
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 10px 30px -10px var(--primary-glow);
+  transform: translateY(-2px);
+}
+
+/* Nav */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(9, 10, 15, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 0;
+}
+
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wordmark {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: -0.02em;
+}
+
+.wordmark span {
+  color: var(--primary);
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 1.5rem;
+}
+
+.nav-links a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: #fff;
+}
+
+.nav-cta {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 4px 12px var(--primary-glow);
+  transition: opacity 0.2s;
+}
+
+.nav-cta:hover {
+  opacity: 0.9;
+}
+
+/* Hero Section */
+.hero {
+  padding: 10rem 0 6rem 0;
+  text-align: center;
+}
+
+.hero-tag {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  background: rgba(99, 102, 241, 0.1);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 50px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+  font-size.clamp: 2.2rem;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  max-width: 900px;
+  margin: 0 auto 1.5rem auto;
+  background: linear-gradient(180deg, #fff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lede {
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  max-width: 750px;
+  margin: 0 auto 2.5rem auto;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 3.5rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background: #fff;
+  color: #0f172a;
+}
+
+.btn-primary:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+}
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Live Demo Box */
+.hero-demo {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: left;
+  backdrop-filter: blur(10px);
+}
+
+.hero-demo-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dot-live {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.annotated {
+  font-size: 1.1rem;
+  line-height: 2;
+}
+
+.tag {
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin: 0 0.2rem;
+}
+
+.tag.per { background: var(--per-bg); color: var(--per-text); border: 1px solid rgba(59, 130, 246, 0.3); }
+.tag.org { background: var(--org-bg); color: var(--org-text); border: 1px solid rgba(236, 72, 153, 0.3); }
+.tag.loc { background: var(--loc-bg); color: var(--loc-text); border: 1px solid rgba(16, 185, 129, 0.3); }
+.tag.misc { background: var(--misc-bg); color: var(--misc-text); border: 1px solid rgba(245, 158, 11, 0.3); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.dot.per { background: var(--per-text); }
+.dot.org { background: var(--org-text); }
+.dot.loc { background: var(--loc-text); }
+.dot.misc { background: var(--misc-text); }
+
+/* Sections */
+section {
+  padding: 5rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.section-head {
+  margin-bottom: 3rem;
+}
+
+.section-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.section-head h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+/* Typography elements */
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+p {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9em;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+code {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.code-block {
+  background: #040507;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  color: #e2e8f0;
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+/* Callouts & Grids */
+.callout {
+  background: rgba(99, 102, 241, 0.05);
+  border-left: 3px solid var(--primary);
+  padding: 1.25rem;
+  border-radius: 0 12px 12px 0;
+}
+
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.video-frame {
+  aspect-ratio: 16/9;
+  background: #020408;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.video-placeholder {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+}
+
+.play-ring {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  margin: 0 auto 0.5rem auto;
+}
+
+/* Pipeline styles */
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pipe-stage {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.pipe-num {
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.pipe-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--primary);
+  margin-top: 0.5rem;
+}
+
+.pipe-branch-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* Stat strip */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.stat .num {
+  display: block;
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.25rem;
+}
+
+.stat .lbl {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+th, td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* Footer */
+footer {
+  padding: 3rem 0;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-links {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.footer-links a, .footer-note {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.footer-links a:hover {
+  color: #fff;
+}
