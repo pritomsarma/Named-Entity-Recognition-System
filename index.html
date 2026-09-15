@@ -386,9 +386,11 @@
     border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center;
     margin-bottom: 1.5rem; position: relative; overflow: hidden;
   }
-  .video-placeholder { text-align: center; color: #6b7280; font-family: var(--font-mono); font-size: 0.85rem;}
-  .play-ring { width: 50px; height: 50px; border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center; position: relative;}
-  .play-ring::after { content: ''; border-left: 12px solid #fff; border-top: 8px solid transparent; border-bottom: 8px solid transparent; margin-left: 5px; }
+  .video-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
 
   /* ================= TEAM & FOOTER ================= */
   .team-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
@@ -494,10 +496,12 @@
     <div class="video-grid" id="videos">
       <div class="video-slot animate-up">
         <div class="video-frame" data-video-slot="technical">
-          <div class="video-placeholder">
-            <div class="play-ring"></div>
-            <span>Paste your video link in <code>assets/js/main.js</code></span>
-          </div>
+          <iframe 
+            src="https://www.youtube.com/embed/-oxA3uUFV3M" 
+            title="Technical Walkthrough" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowfullscreen>
+          </iframe>
         </div>
         <div class="video-meta">
           <div class="section-tag" style="color: #06B6D4;">Explanation</div>
@@ -508,10 +512,12 @@
 
       <div class="video-slot animate-up">
         <div class="video-frame" data-video-slot="demo">
-          <div class="video-placeholder">
-            <div class="play-ring"></div>
-            <span>Paste your video link in <code>assets/js/main.js</code></span>
-          </div>
+          <iframe 
+            src="https://www.youtube.com/embed/y4ZFm7KL4jE" 
+            title="Live Demonstration" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowfullscreen>
+          </iframe>
         </div>
         <div class="video-meta">
           <div class="section-tag" style="color: #06B6D4;">Demonstration</div>
@@ -859,10 +865,9 @@ LABEL2ID = {label: idx <span class="k">for</span> idx, label <span class="k">in<
   </div>
 </footer>
 
-<!-- Scripts for Math, Charts (retained from original), and newly added UI logic -->
+<!-- Scripts for Math, Charts, and UI logic -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<!-- Retaining your external script links, though you may not need them if UI logic is handled below -->
 <script src="assets/js/main.js"></script>
 <script src="assets/js/charts.js"></script>
 
@@ -930,3 +935,4 @@ LABEL2ID = {label: idx <span class="k">for</span> idx, label <span class="k">in<
 </script>
 </body>
 </html>
+
