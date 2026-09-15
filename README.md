@@ -748,13 +748,11 @@ If you plan to distribute the project or accept external contributions, consider
 
 ---
 
-# 👤 Author
+# 👤 Intern
 
 ## Pritom Sarma
 
-**Electronics & Communication Engineering Student • Illustrator • Robotics & AI Enthusiast**
-
-Interested in combining **technology, artificial intelligence, robotics, and creative problem solving** to build useful real-world systems.
+**Electronics & Communication Engineering Student 
 
 ### Connect
 
@@ -769,8 +767,6 @@ Interested in combining **technology, artificial intelligence, robotics, and cre
 ---
 
 <p align="center">
-
-### ⭐ If you found this project useful, consider giving it a star!
 
 **Built with Python • PyTorch • Hugging Face Transformers • BERT • CRF • Streamlit**
 
