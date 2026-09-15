@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <b>A production-style NLP pipeline that combines contextual BERT representations with structured CRF decoding for accurate BIO-tagged entity extraction.</b>
+  <b>A production-style NLP pipeline that combines contextual BERT representations with structured CRF decoding for accurate BIO-tagged entity extraction.</b>
 </p>
 
 ---
@@ -56,12 +56,12 @@ This project implements a **BERT-based NER engine** fine-tuned on the **CoNLL-20
 
 The model processes raw text and identifies four major entity categories:
 
-| Entity |   Tag  | Description            |
+| Entity |   Tag  | Description            |
 | :----: | :----: | ---------------------- |
-|   👤   |  `PER` | Person                 |
-|   🏢   |  `ORG` | Organization           |
-|   📍   |  `LOC` | Location               |
-|   🌐   | `MISC` | Miscellaneous entities |
+|   👤   |  `PER` | Person                 |
+|   🏢   |  `ORG` | Organization           |
+|   📍   |  `LOC` | Location               |
+|   🌐   | `MISC` | Miscellaneous entities |
 
 Unlike a simple token-level classifier, this implementation optionally uses a **Conditional Random Field (CRF)** layer to model dependencies between consecutive BIO tags.
 
@@ -79,20 +79,6 @@ I-PER → B-LOC → I-PER
 
 ---
 
-# 🎥 Demo
-
-## Interactive NER Dashboard
-
-> 🚧 **Demo video coming soon**
-
-<!-- Replace the placeholder below with your uploaded demo GIF/video -->
-
-<p align="center">
-
-<img src="https://placehold.co/900x500?text=NER+Dashboard+Demo" alt="NER Dashboard Demo" />
-
-</p>
-
 ### Example
 
 **Input**
@@ -105,8 +91,8 @@ Anderson Cooper reported from New York on CNN.
 
 ```text
 Anderson Cooper → PER
-New York         → LOC
-CNN              → ORG
+New York         → LOC
+CNN              → ORG
 ```
 
 The Streamlit interface also displays:
@@ -124,47 +110,47 @@ The Streamlit interface also displays:
 The complete pipeline follows:
 
 ```text
-                    RAW TEXT
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ BERT Tokenizer  │
-              └────────┬────────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │   BERT Encoder  │
-              │  768-dim hidden │
-              │    states       │
-              └────────┬────────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │     Dropout     │
-              └────────┬────────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ Linear Classifier│
-              └────────┬────────┘
-                       │
-                       ▼
-                Token Logits
-                       │
-              ┌────────┴────────┐
-              │                 │
-              ▼                 ▼
-        ┌───────────┐     ┌───────────┐
-        │    CRF    │     │  Argmax   │
-        │ Decoding  │     │ Decoding  │
-        └─────┬─────┘     └─────┬─────┘
-              │                 │
-              └────────┬────────┘
-                       ▼
-                  BIO Tags
-                       │
-                       ▼
-               Entity Extraction
+                    RAW TEXT
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ BERT Tokenizer  │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │   BERT Encoder  │
+              │  768-dim hidden │
+              │    states       │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │     Dropout     │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Linear Classifier│
+              └────────┬────────┘
+                       │
+                       ▼
+                Token Logits
+                       │
+              ┌────────┴────────┐
+              │                 │
+              ▼                 ▼
+        ┌───────────┐     ┌───────────┐
+        │    CRF    │     │  Argmax   │
+        │ Decoding  │     │ Decoding  │
+        └─────┬─────┘     └─────┬─────┘
+              │                 │
+              └────────┬────────┘
+                       ▼
+                  BIO Tags
+                       │
+                       ▼
+               Entity Extraction
 ```
 
 ---
@@ -174,40 +160,40 @@ The complete pipeline follows:
 ```mermaid
 flowchart TD
 
-    A["📝 Raw Text"]
-    B["1. BERT Tokenizer"]
-    C["2. BERT Encoder"]
-    D["3. Dropout"]
-    E["4. Linear Classifier"]
-    F{"CRF Enabled?"}
-    G["5a. CRF Decoding"]
-    H["5b. Argmax Decoding"]
-    I["🏷️ BIO Tags"]
-    J["📦 Entity Extraction"]
+    A["📝 Raw Text"]
+    B["1. BERT Tokenizer"]
+    C["2. BERT Encoder"]
+    D["3. Dropout"]
+    E["4. Linear Classifier"]
+    F{"CRF Enabled?"}
+    G["5a. CRF Decoding"]
+    H["5b. Argmax Decoding"]
+    I["🏷️ BIO Tags"]
+    J["📦 Entity Extraction"]
 
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    F -->|Yes| G
-    F -->|No| H
-    G --> I
-    H --> I
-    I --> J
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F -->|Yes| G
+    F -->|No| H
+    G --> I
+    H --> I
+    I --> J
 
 ```
 
 ### Model Components
 
-| Component             | Role                                       |
+| Component             | Role                                       |
 | --------------------- | ------------------------------------------ |
-| **BERT Tokenizer**    | Converts text into subword tokens          |
-| **BERT Encoder**      | Generates contextual token representations |
-| **Dropout**           | Reduces overfitting                        |
-| **Linear Classifier** | Predicts BIO labels                        |
-| **CRF**               | Learns valid label transitions             |
-| **BIO Decoder**       | Converts predictions into entities         |
+| **BERT Tokenizer**    | Converts text into subword tokens          |
+| **BERT Encoder**      | Generates contextual token representations |
+| **Dropout**           | Reduces overfitting                        |
+| **Linear Classifier** | Predicts BIO labels                        |
+| **CRF**               | Learns valid label transitions             |
+| **BIO Decoder**       | Converts predictions into entities         |
 
 ---
 
@@ -215,17 +201,17 @@ flowchart TD
 
 The model uses the standard CoNLL-2003 entity categories.
 
-| BIO Tag  | Meaning                           | Example  |
+| BIO Tag  | Meaning                           | Example  |
 | -------- | --------------------------------- | -------- |
-| `B-PER`  | Beginning of person               | `B-PER`  |
-| `I-PER`  | Inside person                     | `I-PER`  |
-| `B-ORG`  | Beginning of organization         | `B-ORG`  |
-| `I-ORG`  | Inside organization               | `I-ORG`  |
-| `B-LOC`  | Beginning of location             | `B-LOC`  |
-| `I-LOC`  | Inside location                   | `I-LOC`  |
+| `B-PER`  | Beginning of person               | `B-PER`  |
+| `I-PER`  | Inside person                     | `I-PER`  |
+| `B-ORG`  | Beginning of organization         | `B-ORG`  |
+| `I-ORG`  | Inside organization               | `I-ORG`  |
+| `B-LOC`  | Beginning of location             | `B-LOC`  |
+| `I-LOC`  | Inside location                   | `I-LOC`  |
 | `B-MISC` | Beginning of miscellaneous entity | `B-MISC` |
-| `I-MISC` | Inside miscellaneous entity       | `I-MISC` |
-| `O`      | Outside any entity                | `O`      |
+| `I-MISC` | Inside miscellaneous entity       | `I-MISC` |
+| `O`      | Outside any entity                | `O`      |
 
 ---
 
@@ -252,13 +238,13 @@ The training pipeline supports discriminative fine-tuning:
 ```text
 Phase 1
 BERT Encoder → Frozen
-Classifier   → Trainable
+Classifier   → Trainable
 
-        ↓
+        ↓
 
 Phase 2
 BERT Encoder → Unfrozen
-Classifier   → Trainable
+Classifier   → Trainable
 ```
 
 This allows the classifier head to stabilize before the pretrained encoder is updated.
@@ -321,27 +307,27 @@ Named-Entity-Recognition-System/
 ├── 📄 app.py
 │
 ├── 📁 src/
-│   ├── 📁 data/
-│   │   └── ner_dataset.py
-│   │
-│   ├── 📁 model/
-│   │   └── broadcast_ner_model.py
-│   │
-│   ├── 📁 training/
-│   │   └── trainer.py
-│   │
-│   └── 📁 inference/
-│       ├── predictor.py
-│       └── analytics.py
+│   ├── 📁 data/
+│   │   └── ner_dataset.py
+│   │
+│   ├── 📁 model/
+│   │   └── broadcast_ner_model.py
+│   │
+│   ├── 📁 training/
+│   │   └── trainer.py
+│   │
+│   └── 📁 inference/
+│       ├── predictor.py
+│       └── analytics.py
 │
 ├── 📁 checkpoints/
-│   └── best_model.pt
+│   └── best_model.pt
 │
 ├── 📁 output/
-│   └── training_history.json
+│   └── training_history.json
 │
 └── 📁 runs/
-    └── TensorBoard logs
+    └── TensorBoard logs
 ```
 
 ---
@@ -401,11 +387,11 @@ python train.py
 The default setup uses:
 
 ```text
-Dataset:       CoNLL-2003
-Epochs:        4
-Batch Size:    16
-Max Length:    128
-CRF:           Enabled
+Dataset:       CoNLL-2003
+Epochs:        4
+Batch Size:    16
+Max Length:    128
+CRF:           Enabled
 ```
 
 ---
@@ -416,9 +402,9 @@ Use two-phase discriminative fine-tuning:
 
 ```bash
 python train.py \
-    --fine_tune \
-    --freeze_epochs 2 \
-    --epochs 6
+    --fine_tune \
+    --freeze_epochs 2 \
+    --epochs 6
 ```
 
 ---
@@ -429,9 +415,9 @@ For smaller training subsets:
 
 ```bash
 python train.py \
-    --label_smoothing 0.15 \
-    --dropout 0.4 \
-    --patience 4
+    --label_smoothing 0.15 \
+    --dropout 0.4 \
+    --patience 4
 ```
 
 ---
@@ -440,9 +426,9 @@ python train.py \
 
 ```bash
 python train.py \
-    --device cuda \
-    --amp \
-    --fine_tune
+    --device cuda \
+    --amp \
+    --fine_tune
 ```
 
 ---
@@ -453,9 +439,9 @@ For full-scale training:
 
 ```bash
 python train.py \
-    --full_data \
-    --epochs 10 \
-    --fine_tune
+    --full_data \
+    --epochs 10 \
+    --fine_tune
 ```
 
 > ⚠️ Full training can take considerably longer on CPU. A CUDA-capable GPU is recommended.
@@ -476,16 +462,16 @@ python predict.py --demo
 
 ```bash
 python predict.py \
-    --model_path checkpoints/best_model.pt \
-    --text "Anderson Cooper reported from New York on CNN."
+    --model_path checkpoints/best_model.pt \
+    --text "Anderson Cooper reported from New York on CNN."
 ```
 
 Expected conceptually:
 
 ```text
 Anderson Cooper → PER
-New York        → LOC
-CNN             → ORG
+New York        → LOC
+CNN             → ORG
 ```
 
 ---
@@ -504,10 +490,10 @@ Then:
 
 ```bash
 python predict.py \
-    --model_path checkpoints/best_model.pt \
-    --file transcripts.txt \
-    --analytics \
-    --output results.json
+    --model_path checkpoints/best_model.pt \
+    --file transcripts.txt \
+    --analytics \
+    --output results.json
 ```
 
 ---
@@ -526,22 +512,22 @@ Then open the local Streamlit URL shown in your terminal.
 
 ```text
 ┌──────────────────────────────────────────┐
-│       Named Entity Recognition           │
+│       Named Entity Recognition           │
 ├──────────────────────────────────────────┤
-│                                          │
-│  Enter text here...                      │
-│                                          │
-│  [       Analyze Entities       ]         │
-│                                          │
+│                                          │
+│  Enter text here...                      │
+│                                          │
+│  [       Analyze Entities       ]         │
+│                                          │
 ├──────────────────────────────────────────┤
-│                                          │
-│  Highlighted Entities                    │
-│                                          │
-│  Entity     Type       Confidence         │
-│  ─────────────────────────────────────   │
-│  CNN        ORG        98.4%              │
-│  New York   LOC        96.8%              │
-│                                          │
+│                                          │
+│  Highlighted Entities                    │
+│                                          │
+│  Entity     Type       Confidence         │
+│  ─────────────────────────────────────   │
+│  CNN        ORG        98.4%              │
+│  New York   LOC        96.8%              │
+│                                          │
 └──────────────────────────────────────────┘
 ```
 
@@ -559,11 +545,11 @@ The evaluation pipeline uses **seqeval** for entity-level metrics.
 
 ### Metrics
 
-| Metric        | Description                                         |
+| Metric        | Description                                         |
 | ------------- | --------------------------------------------------- |
-| **Precision** | Percentage of predicted entities that are correct   |
-| **Recall**    | Percentage of actual entities successfully detected |
-| **F1 Score**  | Harmonic mean of precision and recall               |
+| **Precision** | Percentage of predicted entities that are correct   |
+| **Recall**    | Percentage of actual entities successfully detected |
+| **F1 Score**  | Harmonic mean of precision and recall               |
 
 The system evaluates the complete BIO sequence rather than simply counting correctly classified tokens.
 
@@ -575,18 +561,18 @@ The project uses a centralized typed configuration system through `config.py`.
 
 ### Default Configuration
 
-| Parameter                |             Default |
+| Parameter                |             Default |
 | ------------------------ | ------------------: |
-| Base Model               | `bert-base-uncased` |
-| Maximum Sequence Length  |               `128` |
-| Dropout                  |               `0.3` |
-| CRF                      |             Enabled |
-| Encoder Learning Rate    |              `2e-5` |
-| Classifier Learning Rate |              `5e-4` |
-| Label Smoothing          |               `0.1` |
-| Weight Decay             |              `0.01` |
-| Batch Size               |                `16` |
-| Early Stopping Patience  |                 `3` |
+| Base Model               | `bert-base-uncased` |
+| Maximum Sequence Length  |               `128` |
+| Dropout                  |               `0.3` |
+| CRF                      |             Enabled |
+| Encoder Learning Rate    |              `2e-5` |
+| Classifier Learning Rate |              `5e-4` |
+| Label Smoothing          |               `0.1` |
+| Weight Decay             |              `0.01` |
+| Batch Size               |                `16` |
+| Early Stopping Patience  |                 `3` |
 
 Most training parameters can also be overridden directly through the CLI.
 
@@ -597,43 +583,43 @@ Most training parameters can also be overridden directly through the CLI.
 The project follows a structured training strategy designed to balance pretrained knowledge preservation with task-specific adaptation.
 
 ```text
-             ┌─────────────────────┐
-             │   Pretrained BERT    │
-             └──────────┬──────────┘
-                        │
-                        ▼
-              ┌─────────────────┐
-              │ Phase 1 Training│
-              │                 │
-              │ Freeze BERT     │
-              │ Train Classifier│
-              └────────┬────────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ Phase 2 Training│
-              │                 │
-              │ Unfreeze BERT   │
-              │ Lower Encoder LR│
-              └────────┬────────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ Validation      │
-              │ Precision/Recall│
-              │ F1              │
-              └────────┬────────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ Early Stopping  │
-              └────────┬────────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ Best Checkpoint │
-              │ best_model.pt   │
-              └─────────────────┘
+             ┌─────────────────────┐
+             │   Pretrained BERT    │
+             └──────────┬──────────┘
+                        │
+                        ▼
+              ┌─────────────────┐
+              │ Phase 1 Training│
+              │                 │
+              │ Freeze BERT     │
+              │ Train Classifier│
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Phase 2 Training│
+              │                 │
+              │ Unfreeze BERT   │
+              │ Lower Encoder LR│
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Validation      │
+              │ Precision/Recall│
+              │ F1              │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Early Stopping  │
+              └────────┬────────┘
+                       │
+                       ▼
+              ┌─────────────────┐
+              │ Best Checkpoint │
+              │ best_model.pt   │
+              └─────────────────┘
 ```
 
 ---
@@ -648,22 +634,22 @@ Barack Obama visited Microsoft headquarters in Seattle.
 
 ### Expected Entity Extraction
 
-| Entity       | Type  |
+| Entity       | Type  |
 | ------------ | ----- |
 | Barack Obama | `PER` |
-| Microsoft    | `ORG` |
-| Seattle      | `LOC` |
+| Microsoft    | `ORG` |
+| Seattle      | `LOC` |
 
 ### BIO Representation
 
 ```text
-Barack      B-PER
-Obama       I-PER
-visited     O
-Microsoft   B-ORG
+Barack      B-PER
+Obama       I-PER
+visited     O
+Microsoft   B-ORG
 headquarters O
-in          O
-Seattle     B-LOC
+in          O
+Seattle     B-LOC
 ```
 
 ---
@@ -752,7 +738,7 @@ If you plan to distribute the project or accept external contributions, consider
 
 ## Pritom Sarma
 
-**Electronics & Communication Engineering Student 
+**Electronics & Communication Engineering Student 
 
 ### Connect
 
@@ -771,4 +757,5 @@ If you plan to distribute the project or accept external contributions, consider
 **Built with Python • PyTorch • Hugging Face Transformers • BERT • CRF • Streamlit**
 
 </p>
+
 
