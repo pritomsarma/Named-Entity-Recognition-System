@@ -27,7 +27,6 @@
 ## 📑 Table of Contents
 
 * [✨ Overview](#-overview)
-* [🎥 Demo](#-demo)
 * [🧠 How It Works](#-how-it-works)
 * [🏗️ Architecture](#️-architecture)
 * [🏷️ Entity Types](#️-entity-types)
